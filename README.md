@@ -1,0 +1,74 @@
+# Telethings
+
+A Telegram bot that seamlessly integrates with the Things 3 task management app, allowing you to quickly add tasks directly from Telegram.
+
+## Features
+
+- **Quick Task Addition**: Add tasks to Things 3 via simple Telegram commands
+- **Flexible Modifiers**: Enhance your tasks with:
+  - `when:` - Set task timing (e.g., `when:today`, `when:next friday`)
+  - `tags:` - Organize with tags (e.g., `tags:errands,personal`)
+  - `notes:` - Add detailed notes (e.g., `notes:"pick up oat milk"`)
+- **Native Integration**: Uses Things 3's URL scheme for reliable communication
+- **Simple Setup**: Single environment variable configuration
+
+## Quick Start
+
+### Prerequisites
+
+- Go 1.25 or later
+- Telegram bot token (create one via [@BotFather](https://t.me/BotFather))
+- Things 3 app on macOS (with auth token for URL scheme access)
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/IlyasYOY/telethings.git
+cd telethings
+```
+
+### Building
+
+Build the executable:
+
+```bash
+go build -o telethings ./cmd/telethings
+```
+
+### Running
+
+Set your Telegram bot token and run:
+
+```bash
+export TELEGRAM_BOT_TOKEN=your_bot_token_here
+./telethings
+```
+
+The bot will start polling for messages. Send it any text to add a task to Things 3.
+
+### Usage Examples
+
+Send these messages to your Telegram bot:
+
+```
+Buy milk
+→ Creates task: "Buy milk"
+
+Complete project notes:remember to review
+→ Creates task with detailed notes
+
+Gym session when:tomorrow tags:fitness,health
+→ Creates task scheduled for tomorrow with tags
+```
+
+## Technology Stack
+
+- **Language**: Go 1.25+
+- **API**: [Telegram Bot API](https://core.telegram.org/bots/api) via [go-telegram-bot-api](https://github.com/go-telegram-bot-api/telegram-bot-api)
+- **Integration**: Things 3 URL scheme protocol
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
