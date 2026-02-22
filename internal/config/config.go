@@ -12,8 +12,8 @@ const (
 )
 
 var (
-	ErrMissingTelegramToken   = errors.New("telegram token not set")
-	ErrMissingThingsAuthToken = errors.New("things auth token not set")
+	ErrMissingTelegramToken   = errors.New("telegram token not set: " + envTelegramToken)
+	ErrMissingThingsAuthToken = errors.New("things auth token not set: " + envThingsAuthToken)
 )
 
 // Config holds the runtime configuration for the bot.
