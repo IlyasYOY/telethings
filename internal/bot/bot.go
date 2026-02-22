@@ -28,7 +28,7 @@ func (s *apiSender) Send(chatID int64, text string) error {
 }
 
 // New creates a Bot from configuration and an Opener.
-func New(cfg *config.Config, o opener) (*Bot, error) {
+func New(cfg *config.Config, o opener, r thingsReader) (*Bot, error) {
 	api, err := tgbotapi.NewBotAPI(cfg.TelegramToken)
 	if err != nil {
 		return nil, fmt.Errorf("create bot API: %w", err)
@@ -38,6 +38,8 @@ func New(cfg *config.Config, o opener) (*Bot, error) {
 	commands := tgbotapi.NewSetMyCommands(
 		tgbotapi.BotCommand{Command: "start", Description: "Welcome message and quick help"},
 		tgbotapi.BotCommand{Command: "add", Description: "Add a task to Things 3"},
+		tgbotapi.BotCommand{Command: "today", Description: "Show today's tasks from Things 3"},
+		tgbotapi.BotCommand{Command: "inbox", Description: "Show your Things 3 inbox"},
 		tgbotapi.BotCommand{Command: "help", Description: "Show detailed command information"},
 	)
 	if _, err := api.Request(commands); err != nil {
@@ -45,7 +47,7 @@ func New(cfg *config.Config, o opener) (*Bot, error) {
 	}
 
 	sender := &apiSender{api: api}
-	handler := NewHandler(sender, o, cfg.ThingsAuthToken, cfg.AllowedUserIDs)
+	handler := NewHandler(sender, o, r, cfg.ThingsAuthToken, cfg.AllowedUserIDs)
 
 	return &Bot{api: api, handler: handler}, nil
 }

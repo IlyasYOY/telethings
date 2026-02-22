@@ -1,12 +1,14 @@
 package bot_test
 
 import (
+	"strings"
 	"testing"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/IlyasYOY/telethings/internal/bot"
 	"github.com/IlyasYOY/telethings/internal/opener/openertest"
+	"github.com/IlyasYOY/telethings/internal/reader/readertest"
 )
 
 // fakeSender records sent messages without making network calls.
@@ -55,7 +57,7 @@ func TestHandler_HandleAdd_ValidCommand(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender := &fakeSender{}
-	h := bot.NewHandler(sender, rec, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/add Buy milk")
 	if err := h.Handle(update); err != nil {
@@ -80,7 +82,7 @@ func TestHandler_HandleAdd_EmptyCommand(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender := &fakeSender{}
-	h := bot.NewHandler(sender, rec, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/add")
 	if err := h.Handle(update); err != nil {
@@ -102,7 +104,7 @@ func TestHandler_HandleAdd_UnknownCommand(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender := &fakeSender{}
-	h := bot.NewHandler(sender, rec, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/unknown")
 	if err := h.Handle(update); err != nil {
@@ -124,7 +126,7 @@ func TestHandler_HandleAdd_NonCommandMessage(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender := &fakeSender{}
-	h := bot.NewHandler(sender, rec, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
 
 	update := tgbotapi.Update{
 		Message: &tgbotapi.Message{
@@ -150,7 +152,7 @@ func TestHandler_UnauthorizedUser(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender := &fakeSender{}
-	h := bot.NewHandler(sender, rec, authToken, []int64{allowedUserID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{allowedUserID})
 
 	update := newTestUpdate(unauthorizedUserID, chatID, "/add Buy milk")
 	if err := h.Handle(update); err != nil {
@@ -172,7 +174,7 @@ func TestHandler_MultipleAllowedUsers(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender := &fakeSender{}
-	h := bot.NewHandler(sender, rec, authToken, allowedUserIDs)
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, allowedUserIDs)
 
 	for _, userID := range allowedUserIDs {
 		rec.URLs = []string{}
@@ -189,5 +191,97 @@ func TestHandler_MultipleAllowedUsers(t *testing.T) {
 		if len(rec.URLs) != 1 {
 			t.Errorf("expected 1 URL for user %d, got %d", userID, len(rec.URLs))
 		}
+	}
+}
+
+func TestHandler_HandleToday_WithTasks(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender := &fakeSender{}
+	rdr := &readertest.RecordingReader{Tasks: []string{"Buy milk", "Call dentist"}}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/today")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sender.messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(sender.messages))
+	}
+	reply := sender.messages[0].text
+	if !strings.Contains(reply, "Buy milk") || !strings.Contains(reply, "Call dentist") {
+		t.Errorf("reply missing expected tasks: %q", reply)
+	}
+}
+
+func TestHandler_HandleToday_Empty(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender := &fakeSender{}
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/today")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sender.messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(sender.messages))
+	}
+	if !strings.Contains(sender.messages[0].text, "No tasks for today") {
+		t.Errorf("expected empty-list message, got: %q", sender.messages[0].text)
+	}
+}
+
+func TestHandler_HandleInbox_WithTasks(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender := &fakeSender{}
+	rdr := &readertest.RecordingReader{Tasks: []string{"Read book", "Fix bug"}}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/inbox")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sender.messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(sender.messages))
+	}
+	reply := sender.messages[0].text
+	if !strings.Contains(reply, "Read book") || !strings.Contains(reply, "Fix bug") {
+		t.Errorf("reply missing expected tasks: %q", reply)
+	}
+}
+
+func TestHandler_HandleInbox_Empty(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender := &fakeSender{}
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/inbox")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sender.messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(sender.messages))
+	}
+	if !strings.Contains(sender.messages[0].text, "Inbox is empty") {
+		t.Errorf("expected empty-list message, got: %q", sender.messages[0].text)
 	}
 }

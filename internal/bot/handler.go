@@ -7,6 +7,9 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+const thingsListToday = "Today"
+const thingsListInbox = "Inbox"
+
 // MessageSender sends text replies to a Telegram chat.
 type MessageSender interface {
 	Send(chatID int64, text string) error
@@ -16,12 +19,13 @@ type MessageSender interface {
 type Handler struct {
 	sender         MessageSender
 	opener         opener
+	reader         thingsReader
 	authToken      string
 	allowedUserIDs map[int64]bool
 }
 
 // NewHandler creates a Handler.
-func NewHandler(sender MessageSender, o opener, authToken string, allowedUserIDs []int64) *Handler {
+func NewHandler(sender MessageSender, o opener, r thingsReader, authToken string, allowedUserIDs []int64) *Handler {
 	idMap := make(map[int64]bool, len(allowedUserIDs))
 	for _, id := range allowedUserIDs {
 		idMap[id] = true
@@ -29,6 +33,7 @@ func NewHandler(sender MessageSender, o opener, authToken string, allowedUserIDs
 	return &Handler{
 		sender:         sender,
 		opener:         o,
+		reader:         r,
 		authToken:      authToken,
 		allowedUserIDs: idMap,
 	}
@@ -53,9 +58,28 @@ func (h *Handler) Handle(update tgbotapi.Update) error {
 		return h.handleHelp(msg)
 	case "add":
 		return h.handleAdd(msg)
+	case "today":
+		return h.handleTaskList(msg, thingsListToday, "📭 No tasks for today!")
+	case "inbox":
+		return h.handleTaskList(msg, thingsListInbox, "📭 Inbox is empty!")
 	default:
 		return h.sender.Send(msg.Chat.ID, "Unknown command. Use /help to see available commands.")
 	}
+}
+
+func (h *Handler) handleTaskList(msg *tgbotapi.Message, list, emptyMsg string) error {
+	tasks, err := h.reader.TasksInList(list)
+	if err != nil {
+		return fmt.Errorf("read tasks: %w", err)
+	}
+	if len(tasks) == 0 {
+		return h.sender.Send(msg.Chat.ID, emptyMsg)
+	}
+	var sb strings.Builder
+	for i, t := range tasks {
+		fmt.Fprintf(&sb, "%d. %s\n", i+1, t)
+	}
+	return h.sender.Send(msg.Chat.ID, strings.TrimRight(sb.String(), "\n"))
 }
 
 func (h *Handler) handleAdd(msg *tgbotapi.Message) error {
@@ -78,6 +102,8 @@ func (h *Handler) handleStart(msg *tgbotapi.Message) error {
 		"📋 Available commands:\n\n" +
 		"/add <title> - Add a task to Things 3\n" +
 		"  Options: [when:<value>] [tags:<csv>] [notes:<text>]\n\n" +
+		"/today - Show today's tasks from Things 3\n" +
+		"/inbox - Show your Things 3 inbox\n\n" +
 		"/help - Show detailed command information\n"
 	return h.sender.Send(msg.Chat.ID, text)
 }
@@ -89,6 +115,8 @@ func (h *Handler) handleHelp(msg *tgbotapi.Message) error {
 		"  when:<value> - Schedule timing (e.g. today, next friday)\n" +
 		"  tags:<csv> - Add tags (comma-separated)\n" +
 		"  notes:<text> - Add detailed notes\n\n" +
+		"**/today** - Show today's tasks from Things 3\n\n" +
+		"**/inbox** - Show your Things 3 inbox\n\n" +
 		"Examples:\n" +
 		"  /add Buy milk\n" +
 		"  /add Gym when:tomorrow tags:fitness\n" +
