@@ -32,10 +32,14 @@ func (h *Handler) Handle(update tgbotapi.Update) error {
 	}
 
 	switch msg.Command() {
+	case "start":
+		return h.handleStart(msg)
+	case "help":
+		return h.handleHelp(msg)
 	case "add":
 		return h.handleAdd(msg)
 	default:
-		return h.sender.Send(msg.Chat.ID, "Unknown command. Try /add <title>")
+		return h.sender.Send(msg.Chat.ID, "Unknown command. Use /help to see available commands.")
 	}
 }
 
@@ -51,4 +55,28 @@ func (h *Handler) handleAdd(msg *tgbotapi.Message) error {
 	}
 
 	return h.sender.Send(msg.Chat.ID, "✅ Added to Things3")
+}
+
+func (h *Handler) handleStart(msg *tgbotapi.Message) error {
+	text := "👋 Welcome to Telethings!\n\n" +
+		"A Telegram bot that integrates with Things 3 task management.\n\n" +
+		"📋 Available commands:\n\n" +
+		"/add <title> - Add a task to Things 3\n" +
+		"  Options: [when:<value>] [tags:<csv>] [notes:<text>]\n\n" +
+		"/help - Show detailed command information\n"
+	return h.sender.Send(msg.Chat.ID, text)
+}
+
+func (h *Handler) handleHelp(msg *tgbotapi.Message) error {
+	text := "📚 Available Commands:\n\n" +
+		"**/start** - Welcome message and quick help\n\n" +
+		"**/add <title>** - Add a task to Things 3\n" +
+		"  when:<value> - Schedule timing (e.g. today, next friday)\n" +
+		"  tags:<csv> - Add tags (comma-separated)\n" +
+		"  notes:<text> - Add detailed notes\n\n" +
+		"Examples:\n" +
+		"  /add Buy milk\n" +
+		"  /add Gym when:tomorrow tags:fitness\n" +
+		"  /add Review notes:check email\n"
+	return h.sender.Send(msg.Chat.ID, text)
 }

@@ -34,6 +34,16 @@ func New(cfg *config.Config, o opener) (*Bot, error) {
 		return nil, fmt.Errorf("create bot API: %w", err)
 	}
 
+	// Register commands with Telegram
+	commands := tgbotapi.NewSetMyCommands(
+		tgbotapi.BotCommand{Command: "start", Description: "Welcome message and quick help"},
+		tgbotapi.BotCommand{Command: "add", Description: "Add a task to Things 3"},
+		tgbotapi.BotCommand{Command: "help", Description: "Show detailed command information"},
+	)
+	if _, err := api.Request(commands); err != nil {
+		return nil, fmt.Errorf("set bot commands: %w", err)
+	}
+
 	sender := &apiSender{api: api}
 	handler := NewHandler(sender, o, cfg.ThingsAuthToken)
 
