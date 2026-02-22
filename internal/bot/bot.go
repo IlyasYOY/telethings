@@ -45,7 +45,7 @@ func New(cfg *config.Config, o opener) (*Bot, error) {
 	}
 
 	sender := &apiSender{api: api}
-	handler := NewHandler(sender, o, cfg.ThingsAuthToken)
+	handler := NewHandler(sender, o, cfg.ThingsAuthToken, cfg.AllowedUserIDs)
 
 	return &Bot{api: api, handler: handler}, nil
 }

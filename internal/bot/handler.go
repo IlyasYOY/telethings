@@ -14,20 +14,35 @@ type MessageSender interface {
 
 // Handler dispatches Telegram updates to the appropriate command handler.
 type Handler struct {
-	sender    MessageSender
-	opener    opener
-	authToken string
+	sender         MessageSender
+	opener         opener
+	authToken      string
+	allowedUserIDs map[int64]bool
 }
 
 // NewHandler creates a Handler.
-func NewHandler(sender MessageSender, o opener, authToken string) *Handler {
-	return &Handler{sender: sender, opener: o, authToken: authToken}
+func NewHandler(sender MessageSender, o opener, authToken string, allowedUserIDs []int64) *Handler {
+	idMap := make(map[int64]bool, len(allowedUserIDs))
+	for _, id := range allowedUserIDs {
+		idMap[id] = true
+	}
+	return &Handler{
+		sender:         sender,
+		opener:         o,
+		authToken:      authToken,
+		allowedUserIDs: idMap,
+	}
 }
 
 // Handle processes a single update.
 func (h *Handler) Handle(update tgbotapi.Update) error {
 	msg := update.Message
 	if msg == nil || !msg.IsCommand() {
+		return nil
+	}
+
+	// Check if user is allowed
+	if !h.allowedUserIDs[msg.From.ID] {
 		return nil
 	}
 

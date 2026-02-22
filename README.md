@@ -40,14 +40,16 @@ go build -o telethings ./cmd/telethings
 
 ### Running
 
-Set your Telegram bot token and run:
+Set your Telegram bot token and allowed user IDs, then run:
 
 ```bash
-export TELEGRAM_BOT_TOKEN=your_bot_token_here
+export TELETHINGS_TELEGRAM_TOKEN=your_bot_token_here
+export TELETHINGS_THINGS_AUTH_TOKEN=your_things_auth_token_here
+export TELETHINGS_ALLOWED_USER_IDS=123456789,987654321
 ./telethings
 ```
 
-The bot will start polling for messages.
+The bot will start polling for messages. Only users in the `TELETHINGS_ALLOWED_USER_IDS` list can interact with the bot.
 
 ### Available Commands
 
@@ -79,6 +81,23 @@ Use `/help` to see all available commands and their usage directly in Telegram.
 - **Language**: Go 1.25+
 - **API**: [Telegram Bot API](https://core.telegram.org/bots/api) via [go-telegram-bot-api](https://github.com/go-telegram-bot-api/telegram-bot-api)
 - **Integration**: Things 3 URL scheme protocol
+
+## Configuration
+
+The bot requires the following environment variables:
+
+- `TELETHINGS_TELEGRAM_TOKEN` - Your Telegram bot token (required)
+- `TELETHINGS_THINGS_AUTH_TOKEN` - Things 3 URL scheme auth token (required)
+- `TELETHINGS_ALLOWED_USER_IDS` - Comma-separated list of Telegram user IDs allowed to use the bot (required)
+
+Example:
+```bash
+export TELETHINGS_TELEGRAM_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+export TELETHINGS_THINGS_AUTH_TOKEN=your_things_auth_token
+export TELETHINGS_ALLOWED_USER_IDS=123456789,987654321,555555555
+```
+
+Only users whose Telegram IDs are in the `TELETHINGS_ALLOWED_USER_IDS` list can interact with the bot.
 
 ## License
 
