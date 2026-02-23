@@ -22,8 +22,10 @@ type sentMessage struct {
 type fakeSender struct {
 	messages      []sentMessage
 	ackCallbacks  []string
+	typingChats   []int64
 	sendErr       error
 	sendInlineErr error
+	typingErr     error
 	ackErr        error
 }
 
@@ -40,6 +42,14 @@ func (s *fakeSender) SendWithInlineKeyboard(chatID int64, text string, keyboard 
 		return s.sendInlineErr
 	}
 	s.messages = append(s.messages, sentMessage{chatID: chatID, text: text, withKeyboard: true, keyboard: keyboard})
+	return nil
+}
+
+func (s *fakeSender) SendTyping(chatID int64) error {
+	if s.typingErr != nil {
+		return s.typingErr
+	}
+	s.typingChats = append(s.typingChats, chatID)
 	return nil
 }
 
@@ -257,6 +267,9 @@ func TestHandler_HandleToday_WithTasks(t *testing.T) {
 	reply := (*messages)[0].text
 	if !strings.Contains(reply, "⬜ Buy milk") || !strings.Contains(reply, "⬜ Call dentist") {
 		t.Errorf("reply missing expected tasks: %q", reply)
+	}
+	if len(sender.typingChats) != 1 || sender.typingChats[0] != chatID {
+		t.Fatalf("expected typing for chat %d, got %#v", chatID, sender.typingChats)
 	}
 }
 
@@ -510,6 +523,9 @@ func TestHandler_CallbackPagination_NextPage(t *testing.T) {
 	if len(sender.ackCallbacks) != 1 || sender.ackCallbacks[0] != "cb-1" {
 		t.Fatalf("expected callback ack, got %#v", sender.ackCallbacks)
 	}
+	if len(sender.typingChats) != 1 || sender.typingChats[0] != chatID {
+		t.Fatalf("expected typing for callback chat %d, got %#v", chatID, sender.typingChats)
+	}
 	if len(*messages) != 1 {
 		t.Fatalf("expected 1 reply, got %d", len(*messages))
 	}
@@ -547,5 +563,174 @@ func TestHandler_HandleSomeday_Empty(t *testing.T) {
 	}
 	if !strings.Contains((*messages)[0].text, "Someday is empty") {
 		t.Fatalf("expected empty Someday message, got %q", (*messages)[0].text)
+	}
+}
+
+func TestHandler_HandleTags_WithTags(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender, messages := newSenderMock()
+	rdr := &readertest.RecordingReader{
+		TagsList: []thingsreader.Tag{
+			{Name: "work", Path: "work"},
+			{Name: "home", Path: "home"},
+		},
+	}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/tags")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(*messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(*messages))
+	}
+	reply := (*messages)[0]
+	if !reply.withKeyboard {
+		t.Fatal("expected inline keyboard")
+	}
+	if !strings.Contains(reply.text, "Choose a tag") {
+		t.Fatalf("expected choose-tag message, got %q", reply.text)
+	}
+	if len(reply.keyboard.InlineKeyboard) == 0 || len(reply.keyboard.InlineKeyboard[0]) == 0 {
+		t.Fatalf("expected at least one button, got %#v", reply.keyboard.InlineKeyboard)
+	}
+	if reply.keyboard.InlineKeyboard[0][0].Text != "home" {
+		t.Fatalf("expected sorted tags with home first, got %#v", reply.keyboard.InlineKeyboard)
+	}
+}
+
+func TestHandler_HandleTags_Empty(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender, messages := newSenderMock()
+	rdr := &readertest.RecordingReader{}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/tags")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(*messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(*messages))
+	}
+	if !strings.Contains((*messages)[0].text, "No tags found") {
+		t.Fatalf("expected empty tags message, got %q", (*messages)[0].text)
+	}
+}
+
+func TestHandler_CallbackTagSelection_FirstPage(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender, messages := newSenderMock()
+	rdr := &readertest.RecordingReader{
+		Tasks: []thingsreader.Task{
+			{Title: "Task 01"}, {Title: "Task 02"},
+		},
+	}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newCallbackUpdate(userID, chatID, "cb-tag-1", "tagsel:work")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sender.ackCallbacks) != 1 || sender.ackCallbacks[0] != "cb-tag-1" {
+		t.Fatalf("expected callback ack, got %#v", sender.ackCallbacks)
+	}
+	if rdr.LastTag != "work" || rdr.LastPageOffset != 0 || rdr.LastPageLimit != 11 {
+		t.Fatalf("expected tag page call for work offset=0 limit=11, got tag=%q offset=%d limit=%d", rdr.LastTag, rdr.LastPageOffset, rdr.LastPageLimit)
+	}
+	if len(*messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(*messages))
+	}
+	if (*messages)[0].withKeyboard {
+		t.Fatal("expected plain text reply when there is no pagination keyboard")
+	}
+	if !strings.Contains((*messages)[0].text, "🏷️ work — page 1") {
+		t.Fatalf("expected tag page header, got %q", (*messages)[0].text)
+	}
+}
+
+func TestHandler_CallbackTagPagination_NextPage(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender, messages := newSenderMock()
+	rdr := &readertest.RecordingReader{
+		Tasks: []thingsreader.Task{
+			{Title: "Task 01"}, {Title: "Task 02"}, {Title: "Task 03"}, {Title: "Task 04"}, {Title: "Task 05"},
+			{Title: "Task 06"}, {Title: "Task 07"}, {Title: "Task 08"}, {Title: "Task 09"}, {Title: "Task 10"},
+			{Title: "Task 11"},
+		},
+	}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newCallbackUpdate(userID, chatID, "cb-tag-2", "tagpage:work:1")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sender.ackCallbacks) != 1 || sender.ackCallbacks[0] != "cb-tag-2" {
+		t.Fatalf("expected callback ack, got %#v", sender.ackCallbacks)
+	}
+	if rdr.LastTag != "work" || rdr.LastPageOffset != 10 || rdr.LastPageLimit != 11 {
+		t.Fatalf("expected tag page call for work offset=10 limit=11, got tag=%q offset=%d limit=%d", rdr.LastTag, rdr.LastPageOffset, rdr.LastPageLimit)
+	}
+	if len(*messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(*messages))
+	}
+	reply := (*messages)[0]
+	if !strings.Contains(reply.text, "🏷️ work — page 2") || !strings.Contains(reply.text, "11. ⬜ Task 11") {
+		t.Fatalf("expected tag page 2 with task 11, got %q", reply.text)
+	}
+	if len(reply.keyboard.InlineKeyboard) != 1 || len(reply.keyboard.InlineKeyboard[0]) != 1 {
+		t.Fatalf("expected one Prev button, got %#v", reply.keyboard.InlineKeyboard)
+	}
+	if reply.keyboard.InlineKeyboard[0][0].CallbackData == nil || *reply.keyboard.InlineKeyboard[0][0].CallbackData != "tagpage:work:0" {
+		t.Fatalf("unexpected callback data: %#v", reply.keyboard.InlineKeyboard[0][0].CallbackData)
+	}
+}
+
+func TestHandler_HandleTags_HierarchySortedByPath(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender, messages := newSenderMock()
+	rdr := &readertest.RecordingReader{
+		TagsList: []thingsreader.Tag{
+			{Name: "Urgent", Path: "Work/ClientA/Urgent"},
+			{Name: "Errands", Path: "Personal/Errands"},
+			{Name: "ClientA", Path: "Work/ClientA"},
+		},
+	}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/tags")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	reply := (*messages)[0]
+	first := reply.keyboard.InlineKeyboard[0][0].Text
+	second := reply.keyboard.InlineKeyboard[0][1].Text
+	third := reply.keyboard.InlineKeyboard[1][0].Text
+	if first != "Personal/Errands" || second != "Work/ClientA" || third != "Work/ClientA/Urgent" {
+		t.Fatalf("unexpected hierarchy order: %#v", reply.keyboard.InlineKeyboard)
 	}
 }

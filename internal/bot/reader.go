@@ -6,4 +6,6 @@ import "github.com/IlyasYOY/telethings/internal/thingsreader"
 type thingsReader interface {
 	TasksInList(list string) ([]thingsreader.Task, error)
 	TasksInListPage(list string, offset, limit int) ([]thingsreader.Task, error)
+	TasksByTagPage(tag string, offset, limit int) ([]thingsreader.Task, error)
+	Tags() ([]thingsreader.Tag, error)
 }

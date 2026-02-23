@@ -34,6 +34,11 @@ func (s *apiSender) SendWithInlineKeyboard(chatID int64, text string, keyboard t
 	return err
 }
 
+func (s *apiSender) SendTyping(chatID int64) error {
+	_, err := s.api.Request(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
+	return err
+}
+
 func (s *apiSender) AckCallback(callbackID string) error {
 	_, err := s.api.Request(tgbotapi.NewCallback(callbackID, ""))
 	return err
@@ -54,6 +59,7 @@ func New(cfg *config.Config, o opener, r thingsReader) (*Bot, error) {
 		tgbotapi.BotCommand{Command: "inbox", Description: "Show your Things 3 inbox"},
 		tgbotapi.BotCommand{Command: "anytime", Description: "Show Anytime tasks (paged)"},
 		tgbotapi.BotCommand{Command: "someday", Description: "Show Someday tasks (paged)"},
+		tgbotapi.BotCommand{Command: "tags", Description: "Show tags and browse tasks by tag"},
 	)
 	if _, err := api.Request(commands); err != nil {
 		return nil, fmt.Errorf("set bot commands: %w", err)
