@@ -1,4 +1,4 @@
-.PHONY: test vet build run install clean
+.PHONY: test vet build run install setup setup-remove clean
 
 # Build directory
 BIN_DIR := ./bin
@@ -21,6 +21,12 @@ run: build
 
 install:
 	go install $(CMD_PATH)
+
+setup:
+	./setup.sh
+
+setup-remove:
+	./setup_remove.sh
 
 clean:
 	rm -rf $(BIN_DIR)

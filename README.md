@@ -52,6 +52,10 @@ export TELETHINGS_ALLOWED_USER_IDS=123456789,987654321
 
 The bot will start polling for messages. Only users in the `TELETHINGS_ALLOWED_USER_IDS` list can interact with the bot.
 
+For running as a background service on macOS, see [SETUP.md](./SETUP.md).
+Quick option: `make setup` (interactive wizard).
+To uninstall background setup: `make setup-remove`.
+
 ### Available Commands
 
 Once the bot is running, you can interact with it using these commands:
@@ -62,6 +66,7 @@ Once the bot is running, you can interact with it using these commands:
 - **`/inbox`** - Show inbox tasks
 - **`/anytime`** - Show Anytime tasks with pagination buttons
 - **`/someday`** - Show Someday tasks with pagination buttons
+- **`/tags`** - Show tags and choose one to read tasks with pagination
 
 ### Usage Examples
 
