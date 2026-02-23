@@ -27,6 +27,18 @@ func (s *apiSender) Send(chatID int64, text string) error {
 	return err
 }
 
+func (s *apiSender) SendWithInlineKeyboard(chatID int64, text string, keyboard tgbotapi.InlineKeyboardMarkup) error {
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ReplyMarkup = keyboard
+	_, err := s.api.Send(msg)
+	return err
+}
+
+func (s *apiSender) AckCallback(callbackID string) error {
+	_, err := s.api.Request(tgbotapi.NewCallback(callbackID, ""))
+	return err
+}
+
 // New creates a Bot from configuration and an Opener.
 func New(cfg *config.Config, o opener, r thingsReader) (*Bot, error) {
 	api, err := tgbotapi.NewBotAPI(cfg.TelegramToken)
@@ -40,6 +52,8 @@ func New(cfg *config.Config, o opener, r thingsReader) (*Bot, error) {
 		tgbotapi.BotCommand{Command: "add", Description: "Add a task to Things 3"},
 		tgbotapi.BotCommand{Command: "today", Description: "Show today's tasks from Things 3"},
 		tgbotapi.BotCommand{Command: "inbox", Description: "Show your Things 3 inbox"},
+		tgbotapi.BotCommand{Command: "anytime", Description: "Show Anytime tasks (paged)"},
+		tgbotapi.BotCommand{Command: "someday", Description: "Show Someday tasks (paged)"},
 	)
 	if _, err := api.Request(commands); err != nil {
 		return nil, fmt.Errorf("set bot commands: %w", err)

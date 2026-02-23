@@ -58,6 +58,10 @@ Once the bot is running, you can interact with it using these commands:
 
 - **`/start`** - Welcome message with quick command overview
 - **`/add <title>`** - Add a task to Things 3 with optional modifiers
+- **`/today`** - Show tasks for today
+- **`/inbox`** - Show inbox tasks
+- **`/anytime`** - Show Anytime tasks with pagination buttons
+- **`/someday`** - Show Someday tasks with pagination buttons
 
 ### Usage Examples
 

@@ -3,6 +3,7 @@ package bot
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/IlyasYOY/telethings/internal/reader"
@@ -11,10 +12,15 @@ import (
 
 const thingsListToday = "Today"
 const thingsListInbox = "Inbox"
+const thingsListAnytime = "Anytime"
+const thingsListSomeday = "Someday"
+const tasksPageSize = 10
 
 // MessageSender sends text replies to a Telegram chat.
 type MessageSender interface {
 	Send(chatID int64, text string) error
+	SendWithInlineKeyboard(chatID int64, text string, keyboard tgbotapi.InlineKeyboardMarkup) error
+	AckCallback(callbackID string) error
 }
 
 // Handler dispatches Telegram updates to the appropriate command handler.
@@ -43,6 +49,10 @@ func NewHandler(sender MessageSender, o opener, r thingsReader, authToken string
 
 // Handle processes a single update.
 func (h *Handler) Handle(update tgbotapi.Update) error {
+	if update.CallbackQuery != nil {
+		return h.handleCallback(update.CallbackQuery)
+	}
+
 	msg := update.Message
 	if msg == nil || !msg.IsCommand() {
 		return nil
@@ -62,9 +72,119 @@ func (h *Handler) Handle(update tgbotapi.Update) error {
 		return h.handleTaskList(msg, thingsListToday, "📭 No tasks for today!")
 	case "inbox":
 		return h.handleTaskList(msg, thingsListInbox, "📭 Inbox is empty!")
+	case "anytime":
+		return h.handlePaginatedTaskList(msg.Chat.ID, thingsListAnytime, 0, "📭 Anytime is empty!")
+	case "someday":
+		return h.handlePaginatedTaskList(msg.Chat.ID, thingsListSomeday, 0, "📭 Someday is empty!")
 	default:
 		return h.sender.Send(msg.Chat.ID, "Unknown command. Use /start to see available commands.")
 	}
+}
+
+func (h *Handler) handleCallback(callback *tgbotapi.CallbackQuery) error {
+	if callback == nil || callback.Message == nil {
+		return nil
+	}
+	if !h.allowedUserIDs[callback.From.ID] {
+		return nil
+	}
+
+	list, page, ok := parsePaginationCallback(callback.Data)
+	if !ok {
+		return h.sender.AckCallback(callback.ID)
+	}
+
+	if err := h.sender.AckCallback(callback.ID); err != nil {
+		return err
+	}
+
+	return h.handlePaginatedTaskList(callback.Message.Chat.ID, list, page, "📭 List is empty!")
+}
+
+func parsePaginationCallback(data string) (list string, page int, ok bool) {
+	parts := strings.Split(data, ":")
+	if len(parts) != 3 || parts[0] != "page" {
+		return "", 0, false
+	}
+
+	page, err := strconv.Atoi(parts[2])
+	if err != nil || page < 0 {
+		return "", 0, false
+	}
+
+	switch parts[1] {
+	case "anytime":
+		return thingsListAnytime, page, true
+	case "someday":
+		return thingsListSomeday, page, true
+	default:
+		return "", 0, false
+	}
+}
+
+func callbackListID(list string) string {
+	switch list {
+	case thingsListAnytime:
+		return "anytime"
+	case thingsListSomeday:
+		return "someday"
+	default:
+		return ""
+	}
+}
+
+func (h *Handler) handlePaginatedTaskList(chatID int64, list string, page int, emptyMsg string) error {
+	tasks, err := h.reader.TasksInList(list)
+	if err != nil {
+		return fmt.Errorf("read tasks: %w", err)
+	}
+	if len(tasks) == 0 {
+		return h.sender.Send(chatID, emptyMsg)
+	}
+
+	text, keyboard := formatPaginatedTasks(list, tasks, page)
+	return h.sender.SendWithInlineKeyboard(chatID, text, keyboard)
+}
+
+func formatPaginatedTasks(list string, tasks []reader.Task, page int) (string, tgbotapi.InlineKeyboardMarkup) {
+	items := append([]reader.Task(nil), tasks...)
+	sort.Slice(items, func(i, j int) bool {
+		return lessTaskForDisplay(items[i], items[j])
+	})
+
+	totalPages := (len(items) + tasksPageSize - 1) / tasksPageSize
+	if page < 0 {
+		page = 0
+	}
+	if page >= totalPages {
+		page = totalPages - 1
+	}
+
+	start := page * tasksPageSize
+	end := start + tasksPageSize
+	if end > len(items) {
+		end = len(items)
+	}
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "📋 %s — page %d/%d\n\n", list, page+1, totalPages)
+	for i, t := range items[start:end] {
+		fmt.Fprintf(&sb, "%d. %s\n", start+i+1, formatTaskLine(t, true))
+	}
+	text := strings.TrimRight(sb.String(), "\n")
+
+	listID := callbackListID(list)
+	var row []tgbotapi.InlineKeyboardButton
+	if page > 0 {
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData("⬅️ Prev", fmt.Sprintf("page:%s:%d", listID, page-1)))
+	}
+	if page < totalPages-1 {
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData("Next ➡️", fmt.Sprintf("page:%s:%d", listID, page+1)))
+	}
+	if len(row) == 0 {
+		return text, tgbotapi.NewInlineKeyboardMarkup()
+	}
+	return text, tgbotapi.NewInlineKeyboardMarkup(row)
 }
 
 func (h *Handler) handleTaskList(msg *tgbotapi.Message, list, emptyMsg string) error {
@@ -218,6 +338,8 @@ func (h *Handler) handleStart(msg *tgbotapi.Message) error {
 		"/add <title> - Add a task to Things 3\n" +
 		"  Options: [when:<value>] [deadline:<value>] [tags:<csv>] [notes:<text>]\n\n" +
 		"/today - Show today's tasks from Things 3\n" +
-		"/inbox - Show your Things 3 inbox\n"
+		"/inbox - Show your Things 3 inbox\n" +
+		"/anytime - Show Anytime tasks with pagination\n" +
+		"/someday - Show Someday tasks with pagination\n"
 	return h.sender.Send(msg.Chat.ID, text)
 }

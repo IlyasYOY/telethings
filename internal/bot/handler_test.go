@@ -1,7 +1,5 @@
 package bot_test
 
-//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -i github.com/IlyasYOY/telethings/internal/bot.MessageSender -o . -p bot_test -g -gr
-
 import (
 	"strings"
 	"testing"
@@ -15,21 +13,47 @@ import (
 )
 
 type sentMessage struct {
-	chatID int64
-	text   string
+	chatID       int64
+	text         string
+	withKeyboard bool
+	keyboard     tgbotapi.InlineKeyboardMarkup
 }
 
-func newSenderMock(t *testing.T) (*MessageSenderMock, *[]sentMessage) {
-	t.Helper()
+type fakeSender struct {
+	messages      []sentMessage
+	ackCallbacks  []string
+	sendErr       error
+	sendInlineErr error
+	ackErr        error
+}
 
-	messages := []sentMessage{}
-	sender := NewMessageSenderMock(t)
-	sender.SendMock.Optional().Set(func(chatID int64, text string) error {
-		messages = append(messages, sentMessage{chatID: chatID, text: text})
-		return nil
-	})
+func (s *fakeSender) Send(chatID int64, text string) error {
+	if s.sendErr != nil {
+		return s.sendErr
+	}
+	s.messages = append(s.messages, sentMessage{chatID: chatID, text: text})
+	return nil
+}
 
-	return sender, &messages
+func (s *fakeSender) SendWithInlineKeyboard(chatID int64, text string, keyboard tgbotapi.InlineKeyboardMarkup) error {
+	if s.sendInlineErr != nil {
+		return s.sendInlineErr
+	}
+	s.messages = append(s.messages, sentMessage{chatID: chatID, text: text, withKeyboard: true, keyboard: keyboard})
+	return nil
+}
+
+func (s *fakeSender) AckCallback(callbackID string) error {
+	if s.ackErr != nil {
+		return s.ackErr
+	}
+	s.ackCallbacks = append(s.ackCallbacks, callbackID)
+	return nil
+}
+
+func newSenderMock() (*fakeSender, *[]sentMessage) {
+	sender := &fakeSender{}
+	return sender, &sender.messages
 }
 
 func newTestUpdate(userID, chatID int64, text string) tgbotapi.Update {
@@ -40,6 +64,19 @@ func newTestUpdate(userID, chatID int64, text string) tgbotapi.Update {
 			Text: text,
 			Entities: []tgbotapi.MessageEntity{
 				{Type: "bot_command", Offset: 0, Length: len(commandFrom(text))},
+			},
+		},
+	}
+}
+
+func newCallbackUpdate(userID, chatID int64, callbackID, data string) tgbotapi.Update {
+	return tgbotapi.Update{
+		CallbackQuery: &tgbotapi.CallbackQuery{
+			ID:   callbackID,
+			Data: data,
+			From: &tgbotapi.User{ID: userID},
+			Message: &tgbotapi.Message{
+				Chat: &tgbotapi.Chat{ID: chatID},
 			},
 		},
 	}
@@ -61,7 +98,7 @@ func TestHandler_HandleAdd_ValidCommand(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/add Buy milk")
@@ -86,7 +123,7 @@ func TestHandler_HandleAdd_EmptyCommand(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/add")
@@ -108,7 +145,7 @@ func TestHandler_HandleAdd_UnknownCommand(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/unknown")
@@ -133,7 +170,7 @@ func TestHandler_HandleAdd_NonCommandMessage(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
 
 	update := tgbotapi.Update{
@@ -159,7 +196,7 @@ func TestHandler_UnauthorizedUser(t *testing.T) {
 	const chatID = int64(999)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{allowedUserID})
 
 	update := newTestUpdate(unauthorizedUserID, chatID, "/add Buy milk")
@@ -181,7 +218,7 @@ func TestHandler_MultipleAllowedUsers(t *testing.T) {
 	const chatID = int64(123)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, allowedUserIDs)
 
 	for _, userID := range allowedUserIDs {
@@ -205,7 +242,7 @@ func TestHandler_HandleToday_WithTasks(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{Tasks: []reader.Task{{Title: "Buy milk"}, {Title: "Call dentist"}}}
 	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
 
@@ -229,7 +266,7 @@ func TestHandler_HandleToday_Empty(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/today")
@@ -251,7 +288,7 @@ func TestHandler_HandleInbox_WithTasks(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{Tasks: []reader.Task{{Title: "Read book"}, {Title: "Fix bug"}}}
 	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
 
@@ -275,7 +312,7 @@ func TestHandler_HandleInbox_Empty(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/inbox")
@@ -297,7 +334,7 @@ func TestHandler_HandleInbox_WithMetadata(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{
 		Tasks: []reader.Task{
 			{Title: "Read book", Area: "Life", Project: "Reading", Deadline: "Friday", Tags: []string{"home", "fun"}},
@@ -325,7 +362,7 @@ func TestHandler_HandleToday_GroupedByAreaThenProject(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{
 		Tasks: []reader.Task{
 			{Title: "Task A", Area: "Work"},
@@ -361,7 +398,7 @@ func TestHandler_HandleInbox_CompletedAtBottom(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{
 		Tasks: []reader.Task{
 			{Title: "Done task", Completed: true},
@@ -387,7 +424,7 @@ func TestHandler_HandleToday_CompletedAtBottomInsideSection(t *testing.T) {
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
-	sender, messages := newSenderMock(t)
+	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{
 		Tasks: []reader.Task{
 			{Title: "Done task", Area: "Work", Completed: true},
@@ -404,5 +441,105 @@ func TestHandler_HandleToday_CompletedAtBottomInsideSection(t *testing.T) {
 	reply := (*messages)[0].text
 	if strings.Index(reply, "⬜ Open task") > strings.Index(reply, "✅ Done task") {
 		t.Errorf("expected open task before completed task in area section, got: %q", reply)
+	}
+}
+
+func TestHandler_HandleAnytime_WithPagination(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender, messages := newSenderMock()
+	rdr := &readertest.RecordingReader{
+		Tasks: []reader.Task{
+			{Title: "Task 01"}, {Title: "Task 02"}, {Title: "Task 03"}, {Title: "Task 04"}, {Title: "Task 05"},
+			{Title: "Task 06"}, {Title: "Task 07"}, {Title: "Task 08"}, {Title: "Task 09"}, {Title: "Task 10"},
+			{Title: "Task 11"},
+		},
+	}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/anytime")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(*messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(*messages))
+	}
+	reply := (*messages)[0]
+	if !reply.withKeyboard {
+		t.Fatal("expected inline keyboard")
+	}
+	if !strings.Contains(reply.text, "Anytime — page 1/2") {
+		t.Fatalf("expected first page header, got %q", reply.text)
+	}
+	if len(reply.keyboard.InlineKeyboard) != 1 || len(reply.keyboard.InlineKeyboard[0]) != 1 {
+		t.Fatalf("expected one Next button, got %#v", reply.keyboard.InlineKeyboard)
+	}
+	if reply.keyboard.InlineKeyboard[0][0].CallbackData == nil || *reply.keyboard.InlineKeyboard[0][0].CallbackData != "page:anytime:1" {
+		t.Fatalf("unexpected callback data: %#v", reply.keyboard.InlineKeyboard[0][0].CallbackData)
+	}
+}
+
+func TestHandler_CallbackPagination_NextPage(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender, messages := newSenderMock()
+	rdr := &readertest.RecordingReader{
+		Tasks: []reader.Task{
+			{Title: "Task 01"}, {Title: "Task 02"}, {Title: "Task 03"}, {Title: "Task 04"}, {Title: "Task 05"},
+			{Title: "Task 06"}, {Title: "Task 07"}, {Title: "Task 08"}, {Title: "Task 09"}, {Title: "Task 10"},
+			{Title: "Task 11"},
+		},
+	}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newCallbackUpdate(userID, chatID, "cb-1", "page:anytime:1")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sender.ackCallbacks) != 1 || sender.ackCallbacks[0] != "cb-1" {
+		t.Fatalf("expected callback ack, got %#v", sender.ackCallbacks)
+	}
+	if len(*messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(*messages))
+	}
+	reply := (*messages)[0]
+	if !strings.Contains(reply.text, "Anytime — page 2/2") || !strings.Contains(reply.text, "11. ⬜ Task 11") {
+		t.Fatalf("expected page 2 with task 11, got %q", reply.text)
+	}
+	if len(reply.keyboard.InlineKeyboard) != 1 || len(reply.keyboard.InlineKeyboard[0]) != 1 {
+		t.Fatalf("expected one Prev button, got %#v", reply.keyboard.InlineKeyboard)
+	}
+	if reply.keyboard.InlineKeyboard[0][0].CallbackData == nil || *reply.keyboard.InlineKeyboard[0][0].CallbackData != "page:anytime:0" {
+		t.Fatalf("unexpected callback data: %#v", reply.keyboard.InlineKeyboard[0][0].CallbackData)
+	}
+}
+
+func TestHandler_HandleSomeday_Empty(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender, messages := newSenderMock()
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/someday")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(*messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(*messages))
+	}
+	if !strings.Contains((*messages)[0].text, "Someday is empty") {
+		t.Fatalf("expected empty Someday message, got %q", (*messages)[0].text)
 	}
 }
