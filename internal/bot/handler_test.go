@@ -8,6 +8,7 @@ import (
 
 	"github.com/IlyasYOY/telethings/internal/bot"
 	"github.com/IlyasYOY/telethings/internal/opener/openertest"
+	"github.com/IlyasYOY/telethings/internal/reader"
 	"github.com/IlyasYOY/telethings/internal/reader/readertest"
 )
 
@@ -201,7 +202,7 @@ func TestHandler_HandleToday_WithTasks(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender := &fakeSender{}
-	rdr := &readertest.RecordingReader{Tasks: []string{"Buy milk", "Call dentist"}}
+	rdr := &readertest.RecordingReader{Tasks: []reader.Task{{Title: "Buy milk"}, {Title: "Call dentist"}}}
 	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/today")
@@ -247,7 +248,7 @@ func TestHandler_HandleInbox_WithTasks(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender := &fakeSender{}
-	rdr := &readertest.RecordingReader{Tasks: []string{"Read book", "Fix bug"}}
+	rdr := &readertest.RecordingReader{Tasks: []reader.Task{{Title: "Read book"}, {Title: "Fix bug"}}}
 	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/inbox")
@@ -283,5 +284,66 @@ func TestHandler_HandleInbox_Empty(t *testing.T) {
 	}
 	if !strings.Contains(sender.messages[0].text, "Inbox is empty") {
 		t.Errorf("expected empty-list message, got: %q", sender.messages[0].text)
+	}
+}
+
+func TestHandler_HandleInbox_WithMetadata(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender := &fakeSender{}
+	rdr := &readertest.RecordingReader{
+		Tasks: []reader.Task{
+			{Title: "Read book", Area: "Life", Project: "Reading", Deadline: "Friday", Tags: []string{"home", "fun"}},
+		},
+	}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/inbox")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sender.messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(sender.messages))
+	}
+	reply := sender.messages[0].text
+	if !strings.Contains(reply, "Read book — Life/Reading | deadline:Friday | tags:home,fun") {
+		t.Errorf("unexpected inbox format: %q", reply)
+	}
+}
+
+func TestHandler_HandleToday_GroupedByAreaProject(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender := &fakeSender{}
+	rdr := &readertest.RecordingReader{
+		Tasks: []reader.Task{
+			{Title: "Task A", Area: "Work", Project: "Alpha"},
+			{Title: "Task B", Area: "Work", Project: "Beta"},
+			{Title: "Task C", Area: "Life"},
+		},
+	}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/today")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(sender.messages) != 1 {
+		t.Fatalf("expected 1 reply, got %d", len(sender.messages))
+	}
+	reply := sender.messages[0].text
+	if !strings.Contains(reply, "Area: Life") || !strings.Contains(reply, "Project: Other") {
+		t.Errorf("expected grouped Life/Other section, got: %q", reply)
+	}
+	if !strings.Contains(reply, "Area: Work") || !strings.Contains(reply, "Project: Alpha") || !strings.Contains(reply, "Project: Beta") {
+		t.Errorf("expected grouped Work projects, got: %q", reply)
 	}
 }

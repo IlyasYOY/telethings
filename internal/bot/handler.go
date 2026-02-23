@@ -2,8 +2,10 @@ package bot
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
+	"github.com/IlyasYOY/telethings/internal/reader"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -75,11 +77,97 @@ func (h *Handler) handleTaskList(msg *tgbotapi.Message, list, emptyMsg string) e
 	if len(tasks) == 0 {
 		return h.sender.Send(msg.Chat.ID, emptyMsg)
 	}
+
+	var text string
+	if list == thingsListToday {
+		text = formatTodayTasks(tasks)
+	} else {
+		text = formatInboxTasks(tasks)
+	}
+	return h.sender.Send(msg.Chat.ID, text)
+}
+
+func formatInboxTasks(tasks []reader.Task) string {
 	var sb strings.Builder
 	for i, t := range tasks {
-		fmt.Fprintf(&sb, "%d. %s\n", i+1, t)
+		fmt.Fprintf(&sb, "%d. %s\n", i+1, formatTaskLine(t, true))
 	}
-	return h.sender.Send(msg.Chat.ID, strings.TrimRight(sb.String(), "\n"))
+	return strings.TrimRight(sb.String(), "\n")
+}
+
+func formatTodayTasks(tasks []reader.Task) string {
+	groups := make(map[string]map[string][]reader.Task)
+	for _, task := range tasks {
+		area := task.Area
+		if area == "" {
+			area = "Other"
+		}
+		project := task.Project
+		if project == "" {
+			project = "Other"
+		}
+		if _, ok := groups[area]; !ok {
+			groups[area] = make(map[string][]reader.Task)
+		}
+		groups[area][project] = append(groups[area][project], task)
+	}
+
+	areas := make([]string, 0, len(groups))
+	for area := range groups {
+		areas = append(areas, area)
+	}
+	sort.Strings(areas)
+
+	var sb strings.Builder
+	for ai, area := range areas {
+		if ai > 0 {
+			sb.WriteString("\n\n")
+		}
+		fmt.Fprintf(&sb, "Area: %s\n", area)
+
+		projects := make([]string, 0, len(groups[area]))
+		for project := range groups[area] {
+			projects = append(projects, project)
+		}
+		sort.Strings(projects)
+
+		for _, project := range projects {
+			fmt.Fprintf(&sb, "  Project: %s\n", project)
+			items := groups[area][project]
+			sort.Slice(items, func(i, j int) bool {
+				return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
+			})
+			for i, task := range items {
+				fmt.Fprintf(&sb, "    %d. %s\n", i+1, formatTaskLine(task, false))
+			}
+		}
+	}
+
+	return strings.TrimRight(sb.String(), "\n")
+}
+
+func formatTaskLine(task reader.Task, includeAreaProject bool) string {
+	parts := make([]string, 0, 3)
+	if includeAreaProject {
+		switch {
+		case task.Area != "" && task.Project != "":
+			parts = append(parts, task.Area+"/"+task.Project)
+		case task.Area != "":
+			parts = append(parts, task.Area)
+		case task.Project != "":
+			parts = append(parts, task.Project)
+		}
+	}
+	if task.Deadline != "" {
+		parts = append(parts, "deadline:"+task.Deadline)
+	}
+	if len(task.Tags) > 0 {
+		parts = append(parts, "tags:"+strings.Join(task.Tags, ","))
+	}
+	if len(parts) == 0 {
+		return task.Title
+	}
+	return task.Title + " — " + strings.Join(parts, " | ")
 }
 
 func (h *Handler) handleAdd(msg *tgbotapi.Message) error {
