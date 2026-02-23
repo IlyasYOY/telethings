@@ -8,6 +8,7 @@ A Telegram bot that seamlessly integrates with the Things 3 task management app,
 - **Command Discovery**: Built-in `/start` command with command menu integration
 - **Flexible Modifiers**: Enhance your tasks with:
   - `when:` - Set task timing (e.g., `when:today`, `when:next friday`)
+  - `deadline:` - Set task deadline (e.g., `deadline:2026-12-31`)
   - `tags:` - Organize with tags (e.g., `tags:errands,personal`)
   - `notes:` - Add detailed notes (e.g., `notes:"pick up oat milk"`)
 - **Native Integration**: Uses Things 3's URL scheme for reliable communication

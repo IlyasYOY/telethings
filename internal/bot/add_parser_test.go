@@ -26,6 +26,11 @@ func TestParseAddCommand(t *testing.T) {
 			wantURL: "things:///add?auth-token=secret&tags=errands%2Cpersonal&title=Buy%20milk",
 		},
 		{
+			name:    "title with deadline",
+			text:    "Buy milk deadline:2026-12-31",
+			wantURL: "things:///add?auth-token=secret&deadline=2026-12-31&title=Buy%20milk",
+		},
+		{
 			name:    "title with unquoted notes",
 			text:    "Buy milk notes:important",
 			wantURL: "things:///add?auth-token=secret&notes=important&title=Buy%20milk",
@@ -37,8 +42,8 @@ func TestParseAddCommand(t *testing.T) {
 		},
 		{
 			name:    "title with all modifiers",
-			text:    `Buy milk when:today tags:errands notes:"any brand"`,
-			wantURL: "things:///add?auth-token=secret&notes=any%20brand&tags=errands&title=Buy%20milk&when=today",
+			text:    `Buy milk when:today deadline:2026-12-31 tags:errands notes:"any brand"`,
+			wantURL: "things:///add?auth-token=secret&deadline=2026-12-31&notes=any%20brand&tags=errands&title=Buy%20milk&when=today",
 		},
 		{
 			name:    "empty text",

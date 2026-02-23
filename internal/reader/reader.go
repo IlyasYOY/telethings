@@ -8,11 +8,12 @@ import (
 
 // Task represents a Things 3 task with optional metadata.
 type Task struct {
-	Title    string
-	Project  string
-	Deadline string
-	Tags     []string
-	Area     string
+	Title     string
+	Project   string
+	Deadline  string
+	Tags      []string
+	Area      string
+	Completed bool
 }
 
 // AppleScriptReader reads task lists from Things 3 via AppleScript.
@@ -41,7 +42,7 @@ repeat with t in to dos of list "` + list + `"
 
 	set deadlineText to ""
 	try
-		set d to deadline of t
+		set d to due date of t
 		if d is not missing value then set deadlineText to (d as string)
 	end try
 
@@ -54,8 +55,14 @@ repeat with t in to dos of list "` + list + `"
 		end if
 	end try
 
+	set completedText to "false"
+	try
+		set taskStatus to status of t as string
+		if taskStatus is "completed" then set completedText to "true"
+	end try
+
 	set AppleScript's text item delimiters to fieldSep
-	set end of rows to taskName & fieldSep & projectName & fieldSep & deadlineText & fieldSep & tagsText & fieldSep & areaName
+	set end of rows to taskName & fieldSep & projectName & fieldSep & deadlineText & fieldSep & tagsText & fieldSep & areaName & fieldSep & completedText
 end repeat
 
 set AppleScript's text item delimiters to lineSep
@@ -73,16 +80,17 @@ end tell`
 	lines := strings.Split(raw, "\n")
 	tasks := make([]Task, 0, len(lines))
 	for _, line := range lines {
-		fields := strings.SplitN(line, string(rune(31)), 5)
-		if len(fields) != 5 {
+		fields := strings.SplitN(line, string(rune(31)), 6)
+		if len(fields) != 6 {
 			continue
 		}
 		tasks = append(tasks, Task{
-			Title:    fields[0],
-			Project:  fields[1],
-			Deadline: fields[2],
-			Tags:     parseTags(fields[3]),
-			Area:     fields[4],
+			Title:     fields[0],
+			Project:   fields[1],
+			Deadline:  fields[2],
+			Tags:      parseTags(fields[3]),
+			Area:      fields[4],
+			Completed: parseCompleted(fields[5]),
 		})
 	}
 	return tasks, nil
@@ -102,4 +110,9 @@ func parseTags(raw string) []string {
 		tags = append(tags, tag)
 	}
 	return tags
+}
+
+func parseCompleted(raw string) bool {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	return value == "true" || value == "completed" || value == "yes"
 }

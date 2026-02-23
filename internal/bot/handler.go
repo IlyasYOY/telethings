@@ -86,8 +86,13 @@ func (h *Handler) handleTaskList(msg *tgbotapi.Message, list, emptyMsg string) e
 }
 
 func formatInboxTasks(tasks []reader.Task) string {
+	items := append([]reader.Task(nil), tasks...)
+	sort.Slice(items, func(i, j int) bool {
+		return lessTaskForDisplay(items[i], items[j])
+	})
+
 	var sb strings.Builder
-	for i, t := range tasks {
+	for i, t := range items {
 		fmt.Fprintf(&sb, "%d. %s\n", i+1, formatTaskLine(t, true))
 	}
 	return strings.TrimRight(sb.String(), "\n")
@@ -127,7 +132,7 @@ func formatTodayTasks(tasks []reader.Task) string {
 		fmt.Fprintf(&sb, "Area: %s\n", area)
 		items := areaGroups[area]
 		sort.Slice(items, func(i, j int) bool {
-			return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
+			return lessTaskForDisplay(items[i], items[j])
 		})
 		for i, task := range items {
 			fmt.Fprintf(&sb, "  %d. %s\n", i+1, formatTaskLine(task, false))
@@ -145,7 +150,7 @@ func formatTodayTasks(tasks []reader.Task) string {
 			fmt.Fprintf(&sb, "Project: %s\n", project)
 			items := projectGroups[project]
 			sort.Slice(items, func(i, j int) bool {
-				return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
+				return lessTaskForDisplay(items[i], items[j])
 			})
 			for i, task := range items {
 				fmt.Fprintf(&sb, "  %d. %s\n", i+1, formatTaskLine(task, false))
@@ -157,6 +162,11 @@ func formatTodayTasks(tasks []reader.Task) string {
 }
 
 func formatTaskLine(task reader.Task, includeAreaProject bool) string {
+	prefix := "⬜ "
+	if task.Completed {
+		prefix = "✅ "
+	}
+
 	parts := make([]string, 0, 3)
 	if includeAreaProject {
 		switch {
@@ -175,16 +185,23 @@ func formatTaskLine(task reader.Task, includeAreaProject bool) string {
 		parts = append(parts, "tags:"+strings.Join(task.Tags, ","))
 	}
 	if len(parts) == 0 {
-		return task.Title
+		return prefix + task.Title
 	}
-	return task.Title + " — " + strings.Join(parts, " | ")
+	return prefix + task.Title + " — " + strings.Join(parts, " | ")
+}
+
+func lessTaskForDisplay(a, b reader.Task) bool {
+	if a.Completed != b.Completed {
+		return !a.Completed && b.Completed
+	}
+	return strings.ToLower(a.Title) < strings.ToLower(b.Title)
 }
 
 func (h *Handler) handleAdd(msg *tgbotapi.Message) error {
 	args := strings.TrimSpace(msg.CommandArguments())
 	thingsURL := parseAddCommand(h.authToken, args)
 	if thingsURL == "" {
-		return h.sender.Send(msg.Chat.ID, "Usage: /add <title> [when:<value>] [tags:<csv>] [notes:<text>]")
+		return h.sender.Send(msg.Chat.ID, "Usage: /add <title> [when:<value>] [deadline:<value>] [tags:<csv>] [notes:<text>]")
 	}
 
 	if err := h.opener.Open(thingsURL); err != nil {
@@ -199,7 +216,7 @@ func (h *Handler) handleStart(msg *tgbotapi.Message) error {
 		"A Telegram bot that integrates with Things 3 task management.\n\n" +
 		"📋 Available commands:\n\n" +
 		"/add <title> - Add a task to Things 3\n" +
-		"  Options: [when:<value>] [tags:<csv>] [notes:<text>]\n\n" +
+		"  Options: [when:<value>] [deadline:<value>] [tags:<csv>] [notes:<text>]\n\n" +
 		"/today - Show today's tasks from Things 3\n" +
 		"/inbox - Show your Things 3 inbox\n"
 	return h.sender.Send(msg.Chat.ID, text)

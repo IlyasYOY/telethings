@@ -218,7 +218,7 @@ func TestHandler_HandleToday_WithTasks(t *testing.T) {
 		t.Fatalf("expected 1 reply, got %d", len(*messages))
 	}
 	reply := (*messages)[0].text
-	if !strings.Contains(reply, "Buy milk") || !strings.Contains(reply, "Call dentist") {
+	if !strings.Contains(reply, "⬜ Buy milk") || !strings.Contains(reply, "⬜ Call dentist") {
 		t.Errorf("reply missing expected tasks: %q", reply)
 	}
 }
@@ -264,7 +264,7 @@ func TestHandler_HandleInbox_WithTasks(t *testing.T) {
 		t.Fatalf("expected 1 reply, got %d", len(*messages))
 	}
 	reply := (*messages)[0].text
-	if !strings.Contains(reply, "Read book") || !strings.Contains(reply, "Fix bug") {
+	if !strings.Contains(reply, "⬜ Read book") || !strings.Contains(reply, "⬜ Fix bug") {
 		t.Errorf("reply missing expected tasks: %q", reply)
 	}
 }
@@ -314,7 +314,7 @@ func TestHandler_HandleInbox_WithMetadata(t *testing.T) {
 		t.Fatalf("expected 1 reply, got %d", len(*messages))
 	}
 	reply := (*messages)[0].text
-	if !strings.Contains(reply, "Read book — Life/Reading | deadline:Friday | tags:home,fun") {
+	if !strings.Contains(reply, "⬜ Read book — Life/Reading | deadline:Friday | tags:home,fun") {
 		t.Errorf("unexpected inbox format: %q", reply)
 	}
 }
@@ -352,5 +352,57 @@ func TestHandler_HandleToday_GroupedByAreaThenProject(t *testing.T) {
 	}
 	if strings.Index(reply, "Area: Work") > strings.Index(reply, "Project: Alpha") {
 		t.Errorf("expected areas before projects, got: %q", reply)
+	}
+}
+
+func TestHandler_HandleInbox_CompletedAtBottom(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender, messages := newSenderMock(t)
+	rdr := &readertest.RecordingReader{
+		Tasks: []reader.Task{
+			{Title: "Done task", Completed: true},
+			{Title: "Open task"},
+		},
+	}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/inbox")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	reply := (*messages)[0].text
+	if strings.Index(reply, "⬜ Open task") > strings.Index(reply, "✅ Done task") {
+		t.Errorf("expected open task before completed task, got: %q", reply)
+	}
+}
+
+func TestHandler_HandleToday_CompletedAtBottomInsideSection(t *testing.T) {
+	const authToken = "tok"
+	const userID = int64(42)
+	const chatID = int64(42)
+
+	rec := &openertest.RecordingOpener{}
+	sender, messages := newSenderMock(t)
+	rdr := &readertest.RecordingReader{
+		Tasks: []reader.Task{
+			{Title: "Done task", Area: "Work", Completed: true},
+			{Title: "Open task", Area: "Work"},
+		},
+	}
+	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
+
+	update := newTestUpdate(userID, chatID, "/today")
+	if err := h.Handle(update); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	reply := (*messages)[0].text
+	if strings.Index(reply, "⬜ Open task") > strings.Index(reply, "✅ Done task") {
+		t.Errorf("expected open task before completed task in area section, got: %q", reply)
 	}
 }

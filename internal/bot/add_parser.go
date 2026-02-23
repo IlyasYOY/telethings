@@ -8,12 +8,13 @@ import (
 )
 
 // modifierRe matches key:value or key:"quoted value" modifiers.
-var modifierRe = regexp.MustCompile(`(when|tags|notes):("(?:[^"\\]|\\.)*"|\S+)`)
+var modifierRe = regexp.MustCompile(`(when|deadline|tags|notes):("(?:[^"\\]|\\.)*"|\S+)`)
 
 // parseAddCommand parses the text after "/add" and returns the Things3 add URL string.
 // Supported modifiers (order-independent, after the title):
 //
 //	when:<value>
+//	deadline:<value>
 //	tags:<csv>
 //	notes:<word>
 //	notes:"quoted text with spaces"
@@ -27,6 +28,9 @@ func parseAddCommand(authToken, text string) string {
 
 	if v, ok := modifiers["when"]; ok {
 		u = u.WithWhen(v)
+	}
+	if v, ok := modifiers["deadline"]; ok {
+		u = u.WithDeadline(v)
 	}
 	if v, ok := modifiers["tags"]; ok {
 		u = u.WithTags(strings.Split(v, ",")...)
@@ -64,4 +68,3 @@ func splitTitleAndModifiers(text string) (title string, modifiers map[string]str
 
 	return title, modifiers
 }
-
