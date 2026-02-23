@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/IlyasYOY/telethings/internal/thingsreader"
-	"github.com/IlyasYOY/telethings/internal/thingsurl"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -32,12 +31,11 @@ type Handler struct {
 	opener         opener
 	reader         thingsReader
 	store          taskStore
-	authToken      string
 	allowedUserIDs map[int64]bool
 }
 
 // NewHandler creates a Handler.
-func NewHandler(sender MessageSender, o opener, r thingsReader, store taskStore, authToken string, allowedUserIDs []int64) *Handler {
+func NewHandler(sender MessageSender, o opener, r thingsReader, store taskStore, allowedUserIDs []int64) *Handler {
 	idMap := make(map[int64]bool, len(allowedUserIDs))
 	for _, id := range allowedUserIDs {
 		idMap[id] = true
@@ -47,7 +45,6 @@ func NewHandler(sender MessageSender, o opener, r thingsReader, store taskStore,
 		opener:         o,
 		reader:         r,
 		store:          store,
-		authToken:      authToken,
 		allowedUserIDs: idMap,
 	}
 }
@@ -452,23 +449,23 @@ func (h *Handler) handleTaskOperation(chatID int64, number int, operation string
 		return h.sender.Send(chatID, "Task cannot be modified because its Things ID is missing.")
 	}
 
-	update := thingsurl.New(h.authToken).Update(task.ID)
 	var successText string
+	var updateErr error
 	switch operation {
 	case "done":
 		successText = "✅ Task marked as done"
-		update = update.Completed()
+		updateErr = h.reader.SetTaskCompleted(task.ID, true)
 	case "undo":
 		successText = "↩️ Task marked as not completed"
-		update = update.Uncompleted()
+		updateErr = h.reader.SetTaskCompleted(task.ID, false)
 	case "cancel":
 		successText = "🚫 Task canceled"
-		update = update.Canceled()
+		updateErr = h.reader.SetTaskCanceled(task.ID, true)
 	default:
 		return h.sender.Send(chatID, "Unsupported task operation.")
 	}
-	if err := h.opener.Open(update.String()); err != nil {
-		return fmt.Errorf("open things update URL: %w", err)
+	if updateErr != nil {
+		return fmt.Errorf("update task status: %w", updateErr)
 	}
 	return h.sender.Send(chatID, successText)
 }
@@ -667,13 +664,25 @@ func lessTaskForDisplay(a, b thingsreader.Task) bool {
 
 func (h *Handler) handleAdd(msg *tgbotapi.Message) error {
 	args := strings.TrimSpace(msg.CommandArguments())
-	thingsURL := parseAddCommand(h.authToken, args)
-	if thingsURL == "" {
+	input := parseAddCommandInput(args)
+	if input == nil {
 		return h.sender.Send(msg.Chat.ID, "Usage: /add <title> [when:<value>] [deadline:<value>] [tags:<csv>] [notes:<text>]")
 	}
 
-	if err := h.opener.Open(thingsURL); err != nil {
-		return fmt.Errorf("open things URL: %w", err)
+	task, err := h.reader.AddTask(thingsreader.AddTaskInput{
+		Title:    input.title,
+		When:     input.when,
+		Deadline: input.deadline,
+		Tags:     append([]string(nil), input.tags...),
+		Notes:    input.notes,
+	})
+	if err != nil {
+		return fmt.Errorf("add task: %w", err)
+	}
+	if h.store != nil {
+		if err := h.store.SaveTaskList(msg.Chat.ID, "add:last", 1, []thingsreader.Task{task}); err != nil {
+			return fmt.Errorf("save task mapping: %w", err)
+		}
 	}
 
 	return h.sender.Send(msg.Chat.ID, "✅ Added to Things3")

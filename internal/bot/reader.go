@@ -8,4 +8,7 @@ type thingsReader interface {
 	TasksInListPage(list string, offset, limit int) ([]thingsreader.Task, error)
 	TasksByTagPage(tag string, offset, limit int) ([]thingsreader.Task, error)
 	Tags() ([]thingsreader.Tag, error)
+	AddTask(input thingsreader.AddTaskInput) (thingsreader.Task, error)
+	SetTaskCompleted(id string, completed bool) error
+	SetTaskCanceled(id string, canceled bool) error
 }

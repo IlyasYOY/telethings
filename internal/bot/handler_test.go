@@ -148,15 +148,16 @@ func TestHandler_HandleAdd_ValidCommand(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, authToken, []int64{userID})
+	rdr := &readertest.RecordingReader{}
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/add Buy milk")
 	if err := h.Handle(update); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(rec.URLs) != 1 {
-		t.Fatalf("expected 1 URL opened, got %d", len(rec.URLs))
+	if rdr.LastAddInput.Title != "Buy milk" {
+		t.Fatalf("expected AddTask to be called with title %q, got %#v", "Buy milk", rdr.LastAddInput)
 	}
 	if len(*messages) != 1 {
 		t.Fatalf("expected 1 reply, got %d", len(*messages))
@@ -173,7 +174,7 @@ func TestHandler_HandleAdd_EmptyCommand(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/add")
 	if err := h.Handle(update); err != nil {
@@ -195,7 +196,7 @@ func TestHandler_HandleAdd_UnknownCommand(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/unknown")
 	if err := h.Handle(update); err != nil {
@@ -220,7 +221,7 @@ func TestHandler_HandleAdd_NonCommandMessage(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, []int64{userID})
 
 	update := tgbotapi.Update{
 		Message: &tgbotapi.Message{
@@ -246,7 +247,7 @@ func TestHandler_UnauthorizedUser(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, authToken, []int64{allowedUserID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, []int64{allowedUserID})
 
 	update := newTestUpdate(unauthorizedUserID, chatID, "/add Buy milk")
 	if err := h.Handle(update); err != nil {
@@ -268,7 +269,8 @@ func TestHandler_MultipleAllowedUsers(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, authToken, allowedUserIDs)
+	rdr := &readertest.RecordingReader{}
+	h := bot.NewHandler(sender, rec, rdr, nil, allowedUserIDs)
 
 	for _, userID := range allowedUserIDs {
 		rec.URLs = []string{}
@@ -279,8 +281,8 @@ func TestHandler_MultipleAllowedUsers(t *testing.T) {
 			t.Fatalf("unexpected error for user %d: %v", userID, err)
 		}
 
-		if len(rec.URLs) != 1 {
-			t.Errorf("expected 1 URL for user %d, got %d", userID, len(rec.URLs))
+		if rdr.LastAddInput.Title != "Test" {
+			t.Errorf("expected add input title %q for user %d, got %#v", "Test", userID, rdr.LastAddInput)
 		}
 	}
 }
@@ -293,7 +295,7 @@ func TestHandler_HandleToday_WithTasks(t *testing.T) {
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{Tasks: []thingsreader.Task{{Title: "Buy milk"}, {Title: "Call dentist"}}}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/today")
 	if err := h.Handle(update); err != nil {
@@ -319,7 +321,7 @@ func TestHandler_HandleToday_Empty(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/today")
 	if err := h.Handle(update); err != nil {
@@ -342,7 +344,7 @@ func TestHandler_HandleInbox_WithTasks(t *testing.T) {
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{Tasks: []thingsreader.Task{{Title: "Read book"}, {Title: "Fix bug"}}}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/inbox")
 	if err := h.Handle(update); err != nil {
@@ -365,7 +367,7 @@ func TestHandler_HandleInbox_Empty(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/inbox")
 	if err := h.Handle(update); err != nil {
@@ -392,7 +394,7 @@ func TestHandler_HandleInbox_WithMetadata(t *testing.T) {
 			{Title: "Read book", Area: "Life", Project: "Reading", Deadline: "Friday", Tags: []string{"home", "fun"}},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/inbox")
 	if err := h.Handle(update); err != nil {
@@ -422,7 +424,7 @@ func TestHandler_HandleToday_GroupedByAreaThenProject(t *testing.T) {
 			{Title: "Task C", Area: "Life"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/today")
 	if err := h.Handle(update); err != nil {
@@ -457,7 +459,7 @@ func TestHandler_HandleInbox_CompletedAtBottom(t *testing.T) {
 			{Title: "Open task"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/inbox")
 	if err := h.Handle(update); err != nil {
@@ -483,7 +485,7 @@ func TestHandler_HandleInbox_CanceledShownWithCancelSymbol(t *testing.T) {
 			{Title: "Open task"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/inbox")
 	if err := h.Handle(update); err != nil {
@@ -509,7 +511,7 @@ func TestHandler_HandleToday_CompletedAtBottomInsideSection(t *testing.T) {
 			{Title: "Open task", Area: "Work"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/today")
 	if err := h.Handle(update); err != nil {
@@ -536,7 +538,7 @@ func TestHandler_HandleAnytime_WithPagination(t *testing.T) {
 			{Title: "Task 11"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/anytime")
 	if err := h.Handle(update); err != nil {
@@ -578,7 +580,7 @@ func TestHandler_CallbackPagination_NextPage(t *testing.T) {
 			{Title: "Task 11"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newCallbackUpdate(userID, chatID, "cb-1", "page:anytime:1")
 	if err := h.Handle(update); err != nil {
@@ -616,7 +618,7 @@ func TestHandler_HandleSomeday_Empty(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/someday")
 	if err := h.Handle(update); err != nil {
@@ -644,7 +646,7 @@ func TestHandler_HandleTags_WithTags(t *testing.T) {
 			{Name: "home", Path: "home"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/tags")
 	if err := h.Handle(update); err != nil {
@@ -677,7 +679,7 @@ func TestHandler_HandleTags_Empty(t *testing.T) {
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/tags")
 	if err := h.Handle(update); err != nil {
@@ -704,7 +706,7 @@ func TestHandler_CallbackTagSelection_FirstPage(t *testing.T) {
 			{Title: "Task 01"}, {Title: "Task 02"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newCallbackUpdate(userID, chatID, "cb-tag-1", "tagsel:work")
 	if err := h.Handle(update); err != nil {
@@ -742,7 +744,7 @@ func TestHandler_CallbackTagPagination_NextPage(t *testing.T) {
 			{Title: "Task 11"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newCallbackUpdate(userID, chatID, "cb-tag-2", "tagpage:work:1")
 	if err := h.Handle(update); err != nil {
@@ -784,7 +786,7 @@ func TestHandler_HandleTags_HierarchySortedByPath(t *testing.T) {
 			{Name: "ClientA", Path: "Work/ClientA"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, rdr, nil, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, nil, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/tags")
 	if err := h.Handle(update); err != nil {
@@ -812,7 +814,7 @@ func TestHandler_TaskCommand_ShowsTaskDetailsWithButtons(t *testing.T) {
 			3: {ID: "abc123", Title: "Write report", Project: "Q1", Area: "Work", Deadline: "Friday", Tags: []string{"office"}, Completed: false},
 		},
 	}
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, store, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, store, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/task 3")
 	if err := h.Handle(update); err != nil {
@@ -831,29 +833,27 @@ func TestHandler_TaskCommand_ShowsTaskDetailsWithButtons(t *testing.T) {
 	}
 }
 
-func TestHandler_TaskCallback_Done_OpensUpdateURL(t *testing.T) {
+func TestHandler_TaskCallback_Done_UpdatesViaReader(t *testing.T) {
 	const authToken = "tok"
 	const userID = int64(42)
 	const chatID = int64(42)
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
+	rdr := &readertest.RecordingReader{}
 	store := &fakeTaskStore{
 		tasksByNumber: map[int]thingsreader.Task{
 			5: {ID: "task-xyz", Title: "Pay rent"},
 		},
 	}
-	h := bot.NewHandler(sender, rec, &readertest.RecordingReader{}, store, authToken, []int64{userID})
+	h := bot.NewHandler(sender, rec, rdr, store, []int64{userID})
 
 	update := newCallbackUpdate(userID, chatID, "cb-task-1", "taskop:done:5")
 	if err := h.Handle(update); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(rec.URLs) != 1 {
-		t.Fatalf("expected one opened URL, got %d", len(rec.URLs))
-	}
-	if !strings.Contains(rec.URLs[0], "things:///update?") || !strings.Contains(rec.URLs[0], "id=task-xyz") || !strings.Contains(rec.URLs[0], "completed=true") {
-		t.Fatalf("unexpected update URL: %q", rec.URLs[0])
+	if rdr.LastUpdateID != "task-xyz" || rdr.LastCompleted == nil || !*rdr.LastCompleted {
+		t.Fatalf("expected reader completion update for task-xyz, got id=%q completed=%#v", rdr.LastUpdateID, rdr.LastCompleted)
 	}
 	if len(*messages) != 1 || !strings.Contains((*messages)[0].text, "marked as done") {
 		t.Fatalf("unexpected callback response: %#v", *messages)

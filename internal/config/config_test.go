@@ -9,7 +9,6 @@ import (
 
 func TestFromEnv_Success(t *testing.T) {
 	t.Setenv("TELETHINGS_TELEGRAM_TOKEN", "tok123")
-	t.Setenv("TELETHINGS_THINGS_AUTH_TOKEN", "auth456")
 	t.Setenv("TELETHINGS_ALLOWED_USER_IDS", "123,456,789")
 
 	cfg, err := config.FromEnv()
@@ -18,9 +17,6 @@ func TestFromEnv_Success(t *testing.T) {
 	}
 	if cfg.TelegramToken != "tok123" {
 		t.Errorf("TelegramToken = %q, want %q", cfg.TelegramToken, "tok123")
-	}
-	if cfg.ThingsAuthToken != "auth456" {
-		t.Errorf("ThingsAuthToken = %q, want %q", cfg.ThingsAuthToken, "auth456")
 	}
 	if len(cfg.AllowedUserIDs) != 3 {
 		t.Errorf("AllowedUserIDs count = %d, want 3", len(cfg.AllowedUserIDs))
@@ -35,7 +31,6 @@ func TestFromEnv_Success(t *testing.T) {
 
 func TestFromEnv_MissingTelegramToken(t *testing.T) {
 	t.Setenv("TELETHINGS_TELEGRAM_TOKEN", "")
-	t.Setenv("TELETHINGS_THINGS_AUTH_TOKEN", "auth456")
 	t.Setenv("TELETHINGS_ALLOWED_USER_IDS", "123")
 
 	_, err := config.FromEnv()
@@ -44,20 +39,8 @@ func TestFromEnv_MissingTelegramToken(t *testing.T) {
 	}
 }
 
-func TestFromEnv_MissingThingsAuthToken(t *testing.T) {
-	t.Setenv("TELETHINGS_TELEGRAM_TOKEN", "tok123")
-	t.Setenv("TELETHINGS_THINGS_AUTH_TOKEN", "")
-	t.Setenv("TELETHINGS_ALLOWED_USER_IDS", "123")
-
-	_, err := config.FromEnv()
-	if !errors.Is(err, config.ErrMissingThingsAuthToken) {
-		t.Errorf("expected ErrMissingThingsAuthToken, got %v", err)
-	}
-}
-
 func TestFromEnv_MissingAllowedUserIDs(t *testing.T) {
 	t.Setenv("TELETHINGS_TELEGRAM_TOKEN", "tok123")
-	t.Setenv("TELETHINGS_THINGS_AUTH_TOKEN", "auth456")
 	t.Setenv("TELETHINGS_ALLOWED_USER_IDS", "")
 
 	_, err := config.FromEnv()
@@ -68,7 +51,6 @@ func TestFromEnv_MissingAllowedUserIDs(t *testing.T) {
 
 func TestFromEnv_InvalidAllowedUserIDs(t *testing.T) {
 	t.Setenv("TELETHINGS_TELEGRAM_TOKEN", "tok123")
-	t.Setenv("TELETHINGS_THINGS_AUTH_TOKEN", "auth456")
 	t.Setenv("TELETHINGS_ALLOWED_USER_IDS", "123,invalid,456")
 
 	_, err := config.FromEnv()
@@ -79,7 +61,6 @@ func TestFromEnv_InvalidAllowedUserIDs(t *testing.T) {
 
 func TestFromEnv_AllowedUserIDsWithWhitespace(t *testing.T) {
 	t.Setenv("TELETHINGS_TELEGRAM_TOKEN", "tok123")
-	t.Setenv("TELETHINGS_THINGS_AUTH_TOKEN", "auth456")
 	t.Setenv("TELETHINGS_ALLOWED_USER_IDS", " 123 , 456 , 789 ")
 
 	cfg, err := config.FromEnv()
@@ -93,7 +74,6 @@ func TestFromEnv_AllowedUserIDsWithWhitespace(t *testing.T) {
 
 func TestFromEnv_DBDSNOptional(t *testing.T) {
 	t.Setenv("TELETHINGS_TELEGRAM_TOKEN", "tok123")
-	t.Setenv("TELETHINGS_THINGS_AUTH_TOKEN", "auth456")
 	t.Setenv("TELETHINGS_ALLOWED_USER_IDS", "123")
 	t.Setenv("TELETHINGS_DB_DSN", "file:test.db")
 

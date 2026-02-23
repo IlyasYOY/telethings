@@ -67,7 +67,7 @@ func New(cfg *config.Config, o opener, r thingsReader, store taskStore) (*Bot, e
 	}
 
 	sender := &apiSender{api: api}
-	handler := NewHandler(sender, o, r, store, cfg.ThingsAuthToken, cfg.AllowedUserIDs)
+	handler := NewHandler(sender, o, r, store, cfg.AllowedUserIDs)
 
 	return &Bot{api: api, handler: handler}, nil
 }

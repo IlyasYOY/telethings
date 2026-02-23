@@ -11,7 +11,7 @@ A Telegram bot that seamlessly integrates with the Things 3 task management app,
   - `deadline:` - Set task deadline (e.g., `deadline:2026-12-31`)
   - `tags:` - Organize with tags (e.g., `tags:errands,personal`)
   - `notes:` - Add detailed notes (e.g., `notes:"pick up oat milk"`)
-- **Native Integration**: Uses Things 3's URL scheme for reliable communication
+- **Native Integration**: Uses AppleScript for direct Things 3 automation
 - **Simple Setup**: Single environment variable configuration
 
 ## Quick Start
@@ -20,7 +20,7 @@ A Telegram bot that seamlessly integrates with the Things 3 task management app,
 
 - Go 1.25 or later
 - Telegram bot token (create one via [@BotFather](https://t.me/BotFather))
-- Things 3 app on macOS (with auth token for URL scheme access)
+- Things 3 app on macOS
 
 ### Installation
 
@@ -45,7 +45,6 @@ Set your Telegram bot token and allowed user IDs, then run:
 
 ```bash
 export TELETHINGS_TELEGRAM_TOKEN=your_bot_token_here
-export TELETHINGS_THINGS_AUTH_TOKEN=your_things_auth_token_here
 export TELETHINGS_ALLOWED_USER_IDS=123456789,987654321
 ./telethings
 ```
@@ -90,21 +89,19 @@ Use `/start` to see all available commands and their usage directly in Telegram.
 
 - **Language**: Go 1.25+
 - **API**: [Telegram Bot API](https://core.telegram.org/bots/api) via [go-telegram-bot-api](https://github.com/go-telegram-bot-api/telegram-bot-api)
-- **Integration**: Things 3 URL scheme protocol
+- **Integration**: AppleScript automation for Things 3
 
 ## Configuration
 
 The bot requires the following environment variables:
 
 - `TELETHINGS_TELEGRAM_TOKEN` - Your Telegram bot token (required)
-- `TELETHINGS_THINGS_AUTH_TOKEN` - Things 3 URL scheme auth token (required)
 - `TELETHINGS_ALLOWED_USER_IDS` - Comma-separated list of Telegram user IDs allowed to use the bot (required)
 - `TELETHINGS_DB_DSN` - Optional SQLite DSN/connection string (default: in-memory SQLite)
 
 Example:
 ```bash
 export TELETHINGS_TELEGRAM_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
-export TELETHINGS_THINGS_AUTH_TOKEN=your_things_auth_token
 export TELETHINGS_ALLOWED_USER_IDS=123456789,987654321,555555555
 export TELETHINGS_DB_DSN=file:telethings.db
 ```

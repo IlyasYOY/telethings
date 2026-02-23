@@ -8,10 +8,16 @@ type RecordingReader struct {
 	Tasks          []thingsreader.Task
 	TagsList       []thingsreader.Tag
 	Err            error
+	AddErr         error
+	UpdateErr      error
 	LastPageList   string
 	LastPageOffset int
 	LastPageLimit  int
 	LastTag        string
+	LastAddInput   thingsreader.AddTaskInput
+	LastUpdateID   string
+	LastCompleted  *bool
+	LastCanceled   *bool
 }
 
 // TasksInList returns the pre-configured Tasks and Err, ignoring list.
@@ -67,4 +73,41 @@ func (r *RecordingReader) Tags() ([]thingsreader.Tag, error) {
 		return nil, r.Err
 	}
 	return append([]thingsreader.Tag(nil), r.TagsList...), nil
+}
+
+// AddTask records input and returns a task with configured ID.
+func (r *RecordingReader) AddTask(input thingsreader.AddTaskInput) (thingsreader.Task, error) {
+	r.LastAddInput = input
+	if r.AddErr != nil {
+		return thingsreader.Task{}, r.AddErr
+	}
+	id := "new-task-id"
+	if len(r.Tasks) > 0 && r.Tasks[0].ID != "" {
+		id = r.Tasks[0].ID
+	}
+	task := thingsreader.Task{
+		ID:       id,
+		Title:    input.Title,
+		Deadline: input.Deadline,
+		Tags:     append([]string(nil), input.Tags...),
+	}
+	return task, nil
+}
+
+func (r *RecordingReader) SetTaskCompleted(id string, completed bool) error {
+	r.LastUpdateID = id
+	r.LastCompleted = &completed
+	if r.UpdateErr != nil {
+		return r.UpdateErr
+	}
+	return nil
+}
+
+func (r *RecordingReader) SetTaskCanceled(id string, canceled bool) error {
+	r.LastUpdateID = id
+	r.LastCanceled = &canceled
+	if r.UpdateErr != nil {
+		return r.UpdateErr
+	}
+	return nil
 }

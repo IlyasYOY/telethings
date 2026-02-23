@@ -3,43 +3,38 @@ package bot
 import (
 	"regexp"
 	"strings"
-
-	"github.com/IlyasYOY/telethings/internal/thingsurl"
 )
 
 // modifierRe matches key:value or key:"quoted value" modifiers.
 var modifierRe = regexp.MustCompile(`(when|deadline|tags|notes):("(?:[^"\\]|\\.)*"|\S+)`)
 
-// parseAddCommand parses the text after "/add" and returns the Things3 add URL string.
-// Supported modifiers (order-independent, after the title):
-//
-//	when:<value>
-//	deadline:<value>
-//	tags:<csv>
-//	notes:<word>
-//	notes:"quoted text with spaces"
-func parseAddCommand(authToken, text string) string {
+type addCommandInput struct {
+	title    string
+	when     string
+	deadline string
+	tags     []string
+	notes    string
+}
+
+func parseAddCommandInput(text string) *addCommandInput {
 	title, modifiers := splitTitleAndModifiers(text)
 	if title == "" {
-		return ""
+		return nil
 	}
-
-	u := thingsurl.New(authToken).Add(title)
-
+	in := &addCommandInput{title: title}
 	if v, ok := modifiers["when"]; ok {
-		u = u.WithWhen(v)
+		in.when = v
 	}
 	if v, ok := modifiers["deadline"]; ok {
-		u = u.WithDeadline(v)
+		in.deadline = v
 	}
 	if v, ok := modifiers["tags"]; ok {
-		u = u.WithTags(strings.Split(v, ",")...)
+		in.tags = strings.Split(v, ",")
 	}
 	if v, ok := modifiers["notes"]; ok {
-		u = u.WithNotes(v)
+		in.notes = v
 	}
-
-	return u.String()
+	return in
 }
 
 // splitTitleAndModifiers separates the plain title from key:value modifiers.
