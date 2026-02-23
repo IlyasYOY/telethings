@@ -9,6 +9,7 @@ import (
 
 	"github.com/IlyasYOY/telethings/internal/bot"
 	"github.com/IlyasYOY/telethings/internal/config"
+	"github.com/IlyasYOY/telethings/internal/db"
 	"github.com/IlyasYOY/telethings/internal/opener"
 	"github.com/IlyasYOY/telethings/internal/thingsreader"
 )
@@ -19,7 +20,15 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	b, err := bot.New(cfg, opener.MacOSOpener{}, thingsreader.AppleScriptReader{})
+	conn, err := db.OpenAndMigrate(cfg.DBDSN)
+	if err != nil {
+		log.Fatalf("db: %v", err)
+	}
+	defer conn.Close()
+
+	store := db.NewTaskStore(conn)
+
+	b, err := bot.New(cfg, opener.MacOSOpener{}, thingsreader.AppleScriptReader{}, store)
 	if err != nil {
 		log.Fatalf("bot: %v", err)
 	}

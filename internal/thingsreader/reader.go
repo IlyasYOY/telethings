@@ -10,12 +10,14 @@ import (
 
 // Task represents a Things 3 task with optional metadata.
 type Task struct {
+	ID        string
 	Title     string
 	Project   string
 	Deadline  string
 	Tags      []string
 	Area      string
 	Completed bool
+	Canceled  bool
 }
 
 // Tag represents a Things 3 tag with full hierarchy path.
@@ -71,6 +73,7 @@ set fieldSep to ASCII character 31
 set lineSep to ASCII character 10
 set rows to {}
 repeat with t in to dos of list "` + list + `"
+	set taskID to id of t as string
 	set taskName to name of t
 
 	set projectName to ""
@@ -100,14 +103,14 @@ repeat with t in to dos of list "` + list + `"
 		end if
 	end try
 
-	set completedText to "false"
+	set statusText to ""
 	try
 		set taskStatus to status of t as string
-		if taskStatus is "completed" then set completedText to "true"
+		set statusText to taskStatus
 	end try
 
 	set AppleScript's text item delimiters to fieldSep
-	set end of rows to taskName & fieldSep & projectName & fieldSep & deadlineText & fieldSep & tagsText & fieldSep & areaName & fieldSep & completedText
+	set end of rows to taskID & fieldSep & taskName & fieldSep & projectName & fieldSep & deadlineText & fieldSep & tagsText & fieldSep & areaName & fieldSep & statusText
 end repeat
 
 set AppleScript's text item delimiters to lineSep
@@ -146,6 +149,7 @@ if endIndex > totalCount then
 end if
 
 repeat with t in items startIndex thru endIndex of allTodos
+	set taskID to id of t as string
 	set taskName to name of t
 
 	set projectName to ""
@@ -175,14 +179,14 @@ repeat with t in items startIndex thru endIndex of allTodos
 		end if
 	end try
 
-	set completedText to "false"
+	set statusText to ""
 	try
 		set taskStatus to status of t as string
-		if taskStatus is "completed" then set completedText to "true"
+		set statusText to taskStatus
 	end try
 
 	set AppleScript's text item delimiters to fieldSep
-	set end of rows to taskName & fieldSep & projectName & fieldSep & deadlineText & fieldSep & tagsText & fieldSep & areaName & fieldSep & completedText
+	set end of rows to taskID & fieldSep & taskName & fieldSep & projectName & fieldSep & deadlineText & fieldSep & tagsText & fieldSep & areaName & fieldSep & statusText
 end repeat
 
 set AppleScript's text item delimiters to lineSep
@@ -258,6 +262,7 @@ repeat with tg in selectedTags
 				set end of seenIDs to todoID
 				set selectedCount to selectedCount + 1
 				if selectedCount > %d and selectedCount <= neededCount then
+					set taskID to id of t as string
 					set taskName to name of t
 
 					set projectName to ""
@@ -287,14 +292,14 @@ repeat with tg in selectedTags
 						end if
 					end try
 
-					set completedText to "false"
+					set statusText to ""
 					try
 						set taskStatus to status of t as string
-						if taskStatus is "completed" then set completedText to "true"
+						set statusText to taskStatus
 					end try
 
 					set AppleScript's text item delimiters to fieldSep
-					set end of rows to taskName & fieldSep & projectName & fieldSep & deadlineText & fieldSep & tagsText & fieldSep & areaName & fieldSep & completedText
+					set end of rows to taskID & fieldSep & taskName & fieldSep & projectName & fieldSep & deadlineText & fieldSep & tagsText & fieldSep & areaName & fieldSep & statusText
 				end if
 
 				if selectedCount >= neededCount then
@@ -323,17 +328,19 @@ func parseTasksOutput(out []byte) []Task {
 	lines := strings.Split(raw, "\n")
 	tasks := make([]Task, 0, len(lines))
 	for _, line := range lines {
-		fields := strings.SplitN(line, string(rune(31)), 6)
-		if len(fields) != 6 {
+		fields := strings.SplitN(line, string(rune(31)), 7)
+		if len(fields) != 7 {
 			continue
 		}
 		tasks = append(tasks, Task{
-			Title:     fields[0],
-			Project:   fields[1],
-			Deadline:  fields[2],
-			Tags:      parseTags(fields[3]),
-			Area:      fields[4],
-			Completed: parseCompleted(fields[5]),
+			ID:        fields[0],
+			Title:     fields[1],
+			Project:   fields[2],
+			Deadline:  fields[3],
+			Tags:      parseTags(fields[4]),
+			Area:      fields[5],
+			Completed: parseCompleted(fields[6]),
+			Canceled:  parseCanceled(fields[6]),
 		})
 	}
 	return tasks
@@ -362,6 +369,11 @@ func parseCompleted(raw string) bool {
 	}
 	n, err := strconv.ParseBool(value)
 	return err == nil && n
+}
+
+func parseCanceled(raw string) bool {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	return value == "canceled" || value == "cancelled"
 }
 
 func parseTagsListOutput(out []byte) []Tag {

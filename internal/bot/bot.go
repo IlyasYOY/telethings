@@ -45,7 +45,7 @@ func (s *apiSender) AckCallback(callbackID string) error {
 }
 
 // New creates a Bot from configuration and an Opener.
-func New(cfg *config.Config, o opener, r thingsReader) (*Bot, error) {
+func New(cfg *config.Config, o opener, r thingsReader, store taskStore) (*Bot, error) {
 	api, err := tgbotapi.NewBotAPI(cfg.TelegramToken)
 	if err != nil {
 		return nil, fmt.Errorf("create bot API: %w", err)
@@ -60,13 +60,14 @@ func New(cfg *config.Config, o opener, r thingsReader) (*Bot, error) {
 		tgbotapi.BotCommand{Command: "anytime", Description: "Show Anytime tasks (paged)"},
 		tgbotapi.BotCommand{Command: "someday", Description: "Show Someday tasks (paged)"},
 		tgbotapi.BotCommand{Command: "tags", Description: "Show tags and browse tasks by tag"},
+		tgbotapi.BotCommand{Command: "task", Description: "Show one task details by list number"},
 	)
 	if _, err := api.Request(commands); err != nil {
 		return nil, fmt.Errorf("set bot commands: %w", err)
 	}
 
 	sender := &apiSender{api: api}
-	handler := NewHandler(sender, o, r, cfg.ThingsAuthToken, cfg.AllowedUserIDs)
+	handler := NewHandler(sender, o, r, store, cfg.ThingsAuthToken, cfg.AllowedUserIDs)
 
 	return &Bot{api: api, handler: handler}, nil
 }

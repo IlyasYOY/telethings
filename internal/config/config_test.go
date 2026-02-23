@@ -90,3 +90,18 @@ func TestFromEnv_AllowedUserIDsWithWhitespace(t *testing.T) {
 		t.Errorf("AllowedUserIDs count = %d, want 3", len(cfg.AllowedUserIDs))
 	}
 }
+
+func TestFromEnv_DBDSNOptional(t *testing.T) {
+	t.Setenv("TELETHINGS_TELEGRAM_TOKEN", "tok123")
+	t.Setenv("TELETHINGS_THINGS_AUTH_TOKEN", "auth456")
+	t.Setenv("TELETHINGS_ALLOWED_USER_IDS", "123")
+	t.Setenv("TELETHINGS_DB_DSN", "file:test.db")
+
+	cfg, err := config.FromEnv()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.DBDSN != "file:test.db" {
+		t.Fatalf("DBDSN = %q, want %q", cfg.DBDSN, "file:test.db")
+	}
+}

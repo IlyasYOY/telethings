@@ -42,6 +42,7 @@ cat > ~/.config/telethings/env <<'EOF'
 TELETHINGS_TELEGRAM_TOKEN=your_bot_token_here
 TELETHINGS_THINGS_AUTH_TOKEN=your_things_auth_token_here
 TELETHINGS_ALLOWED_USER_IDS=123456789,987654321
+TELETHINGS_DB_DSN=
 EOF
 ```
 

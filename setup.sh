@@ -29,6 +29,7 @@ echo "Enter bot configuration values."
 read -r -p "TELETHINGS_TELEGRAM_TOKEN: " telegram_token
 read -r -p "TELETHINGS_THINGS_AUTH_TOKEN: " things_token
 read -r -p "TELETHINGS_ALLOWED_USER_IDS (comma-separated): " allowed_user_ids
+read -r -p "TELETHINGS_DB_DSN (optional, empty = in-memory): " db_dsn
 
 read -r -p "Env file path [$default_env]: " env_path
 env_path="${env_path:-$default_env}"
@@ -45,6 +46,7 @@ cat >"$env_path" <<EOF
 TELETHINGS_TELEGRAM_TOKEN=$telegram_token
 TELETHINGS_THINGS_AUTH_TOKEN=$things_token
 TELETHINGS_ALLOWED_USER_IDS=$allowed_user_ids
+TELETHINGS_DB_DSN=$db_dsn
 EOF
 chmod 600 "$env_path"
 

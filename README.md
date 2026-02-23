@@ -67,6 +67,7 @@ Once the bot is running, you can interact with it using these commands:
 - **`/anytime`** - Show Anytime tasks with pagination buttons
 - **`/someday`** - Show Someday tasks with pagination buttons
 - **`/tags`** - Show tags and choose one to read tasks with pagination
+- **`/task <number>`** - Show one task details and action buttons
 
 ### Usage Examples
 
@@ -98,12 +99,14 @@ The bot requires the following environment variables:
 - `TELETHINGS_TELEGRAM_TOKEN` - Your Telegram bot token (required)
 - `TELETHINGS_THINGS_AUTH_TOKEN` - Things 3 URL scheme auth token (required)
 - `TELETHINGS_ALLOWED_USER_IDS` - Comma-separated list of Telegram user IDs allowed to use the bot (required)
+- `TELETHINGS_DB_DSN` - Optional SQLite DSN/connection string (default: in-memory SQLite)
 
 Example:
 ```bash
 export TELETHINGS_TELEGRAM_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
 export TELETHINGS_THINGS_AUTH_TOKEN=your_things_auth_token
 export TELETHINGS_ALLOWED_USER_IDS=123456789,987654321,555555555
+export TELETHINGS_DB_DSN=file:telethings.db
 ```
 
 Only users whose Telegram IDs are in the `TELETHINGS_ALLOWED_USER_IDS` list can interact with the bot.
