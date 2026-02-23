@@ -31,6 +31,7 @@ The bot is a single binary (`cmd/telethings/main.go`) that long-polls Telegram f
 
 **Package responsibilities:**
 - `internal/bot` — Telegram update handling, command parsing, `MessageSender` interface
+- `internal/thingsreader` — reads Things 3 tasks via AppleScript (including paged list reads)
 - `internal/thingsurl` — fluent builder for Things 3 URL scheme (`things:///add?...`)
 - `internal/config` — reads env vars; returns typed errors for each missing variable
 - `internal/opener` — `MacOSOpener` (production) and `openertest.RecordingOpener` (tests)

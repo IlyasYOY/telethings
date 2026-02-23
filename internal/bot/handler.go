@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/IlyasYOY/telethings/internal/reader"
+	"github.com/IlyasYOY/telethings/internal/thingsreader"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -159,7 +159,7 @@ func (h *Handler) handlePaginatedTaskList(chatID int64, list string, page int, e
 	return h.sender.SendWithInlineKeyboard(chatID, text, keyboard)
 }
 
-func formatPaginatedTasks(list string, tasks []reader.Task, page int, hasNext bool) (string, tgbotapi.InlineKeyboardMarkup) {
+func formatPaginatedTasks(list string, tasks []thingsreader.Task, page int, hasNext bool) (string, tgbotapi.InlineKeyboardMarkup) {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "📋 %s — page %d\n\n", list, page+1)
 	startNumber := page*tasksPageSize + 1
@@ -200,8 +200,8 @@ func (h *Handler) handleTaskList(msg *tgbotapi.Message, list, emptyMsg string) e
 	return h.sender.Send(msg.Chat.ID, text)
 }
 
-func formatInboxTasks(tasks []reader.Task) string {
-	items := append([]reader.Task(nil), tasks...)
+func formatInboxTasks(tasks []thingsreader.Task) string {
+	items := append([]thingsreader.Task(nil), tasks...)
 	sort.Slice(items, func(i, j int) bool {
 		return lessTaskForDisplay(items[i], items[j])
 	})
@@ -213,9 +213,9 @@ func formatInboxTasks(tasks []reader.Task) string {
 	return strings.TrimRight(sb.String(), "\n")
 }
 
-func formatTodayTasks(tasks []reader.Task) string {
-	areaGroups := make(map[string][]reader.Task)
-	projectGroups := make(map[string][]reader.Task)
+func formatTodayTasks(tasks []thingsreader.Task) string {
+	areaGroups := make(map[string][]thingsreader.Task)
+	projectGroups := make(map[string][]thingsreader.Task)
 	for _, task := range tasks {
 		switch {
 		case task.Area != "":
@@ -276,7 +276,7 @@ func formatTodayTasks(tasks []reader.Task) string {
 	return strings.TrimRight(sb.String(), "\n")
 }
 
-func formatTaskLine(task reader.Task, includeAreaProject bool) string {
+func formatTaskLine(task thingsreader.Task, includeAreaProject bool) string {
 	prefix := "⬜ "
 	if task.Completed {
 		prefix = "✅ "
@@ -305,7 +305,7 @@ func formatTaskLine(task reader.Task, includeAreaProject bool) string {
 	return prefix + task.Title + " — " + strings.Join(parts, " | ")
 }
 
-func lessTaskForDisplay(a, b reader.Task) bool {
+func lessTaskForDisplay(a, b thingsreader.Task) bool {
 	if a.Completed != b.Completed {
 		return !a.Completed && b.Completed
 	}

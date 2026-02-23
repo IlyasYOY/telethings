@@ -8,8 +8,8 @@ import (
 
 	"github.com/IlyasYOY/telethings/internal/bot"
 	"github.com/IlyasYOY/telethings/internal/opener/openertest"
-	"github.com/IlyasYOY/telethings/internal/reader"
-	"github.com/IlyasYOY/telethings/internal/reader/readertest"
+	"github.com/IlyasYOY/telethings/internal/thingsreader"
+	"github.com/IlyasYOY/telethings/internal/thingsreader/readertest"
 )
 
 type sentMessage struct {
@@ -243,7 +243,7 @@ func TestHandler_HandleToday_WithTasks(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	rdr := &readertest.RecordingReader{Tasks: []reader.Task{{Title: "Buy milk"}, {Title: "Call dentist"}}}
+	rdr := &readertest.RecordingReader{Tasks: []thingsreader.Task{{Title: "Buy milk"}, {Title: "Call dentist"}}}
 	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/today")
@@ -289,7 +289,7 @@ func TestHandler_HandleInbox_WithTasks(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	rdr := &readertest.RecordingReader{Tasks: []reader.Task{{Title: "Read book"}, {Title: "Fix bug"}}}
+	rdr := &readertest.RecordingReader{Tasks: []thingsreader.Task{{Title: "Read book"}, {Title: "Fix bug"}}}
 	h := bot.NewHandler(sender, rec, rdr, authToken, []int64{userID})
 
 	update := newTestUpdate(userID, chatID, "/inbox")
@@ -336,7 +336,7 @@ func TestHandler_HandleInbox_WithMetadata(t *testing.T) {
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{
-		Tasks: []reader.Task{
+		Tasks: []thingsreader.Task{
 			{Title: "Read book", Area: "Life", Project: "Reading", Deadline: "Friday", Tags: []string{"home", "fun"}},
 		},
 	}
@@ -364,7 +364,7 @@ func TestHandler_HandleToday_GroupedByAreaThenProject(t *testing.T) {
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{
-		Tasks: []reader.Task{
+		Tasks: []thingsreader.Task{
 			{Title: "Task A", Area: "Work"},
 			{Title: "Task B", Project: "Alpha"},
 			{Title: "Task C", Area: "Life"},
@@ -400,7 +400,7 @@ func TestHandler_HandleInbox_CompletedAtBottom(t *testing.T) {
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{
-		Tasks: []reader.Task{
+		Tasks: []thingsreader.Task{
 			{Title: "Done task", Completed: true},
 			{Title: "Open task"},
 		},
@@ -426,7 +426,7 @@ func TestHandler_HandleToday_CompletedAtBottomInsideSection(t *testing.T) {
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{
-		Tasks: []reader.Task{
+		Tasks: []thingsreader.Task{
 			{Title: "Done task", Area: "Work", Completed: true},
 			{Title: "Open task", Area: "Work"},
 		},
@@ -452,7 +452,7 @@ func TestHandler_HandleAnytime_WithPagination(t *testing.T) {
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{
-		Tasks: []reader.Task{
+		Tasks: []thingsreader.Task{
 			{Title: "Task 01"}, {Title: "Task 02"}, {Title: "Task 03"}, {Title: "Task 04"}, {Title: "Task 05"},
 			{Title: "Task 06"}, {Title: "Task 07"}, {Title: "Task 08"}, {Title: "Task 09"}, {Title: "Task 10"},
 			{Title: "Task 11"},
@@ -494,7 +494,7 @@ func TestHandler_CallbackPagination_NextPage(t *testing.T) {
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{
-		Tasks: []reader.Task{
+		Tasks: []thingsreader.Task{
 			{Title: "Task 01"}, {Title: "Task 02"}, {Title: "Task 03"}, {Title: "Task 04"}, {Title: "Task 05"},
 			{Title: "Task 06"}, {Title: "Task 07"}, {Title: "Task 08"}, {Title: "Task 09"}, {Title: "Task 10"},
 			{Title: "Task 11"},

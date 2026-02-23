@@ -10,7 +10,7 @@ import (
 	"github.com/IlyasYOY/telethings/internal/bot"
 	"github.com/IlyasYOY/telethings/internal/config"
 	"github.com/IlyasYOY/telethings/internal/opener"
-	"github.com/IlyasYOY/telethings/internal/reader"
+	"github.com/IlyasYOY/telethings/internal/thingsreader"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	b, err := bot.New(cfg, opener.MacOSOpener{}, reader.AppleScriptReader{})
+	b, err := bot.New(cfg, opener.MacOSOpener{}, thingsreader.AppleScriptReader{})
 	if err != nil {
 		log.Fatalf("bot: %v", err)
 	}
