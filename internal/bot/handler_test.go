@@ -472,8 +472,11 @@ func TestHandler_HandleAnytime_WithPagination(t *testing.T) {
 	if !reply.withKeyboard {
 		t.Fatal("expected inline keyboard")
 	}
-	if !strings.Contains(reply.text, "Anytime — page 1/2") {
+	if !strings.Contains(reply.text, "Anytime — page 1") {
 		t.Fatalf("expected first page header, got %q", reply.text)
+	}
+	if rdr.LastPageList != "Anytime" || rdr.LastPageOffset != 0 || rdr.LastPageLimit != 11 {
+		t.Fatalf("expected paged reader call with offset=0 limit=11, got list=%q offset=%d limit=%d", rdr.LastPageList, rdr.LastPageOffset, rdr.LastPageLimit)
 	}
 	if len(reply.keyboard.InlineKeyboard) != 1 || len(reply.keyboard.InlineKeyboard[0]) != 1 {
 		t.Fatalf("expected one Next button, got %#v", reply.keyboard.InlineKeyboard)
@@ -511,8 +514,11 @@ func TestHandler_CallbackPagination_NextPage(t *testing.T) {
 		t.Fatalf("expected 1 reply, got %d", len(*messages))
 	}
 	reply := (*messages)[0]
-	if !strings.Contains(reply.text, "Anytime — page 2/2") || !strings.Contains(reply.text, "11. ⬜ Task 11") {
+	if !strings.Contains(reply.text, "Anytime — page 2") || !strings.Contains(reply.text, "11. ⬜ Task 11") {
 		t.Fatalf("expected page 2 with task 11, got %q", reply.text)
+	}
+	if rdr.LastPageList != "Anytime" || rdr.LastPageOffset != 10 || rdr.LastPageLimit != 11 {
+		t.Fatalf("expected paged reader call with offset=10 limit=11, got list=%q offset=%d limit=%d", rdr.LastPageList, rdr.LastPageOffset, rdr.LastPageLimit)
 	}
 	if len(reply.keyboard.InlineKeyboard) != 1 || len(reply.keyboard.InlineKeyboard[0]) != 1 {
 		t.Fatalf("expected one Prev button, got %#v", reply.keyboard.InlineKeyboard)

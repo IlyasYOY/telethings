@@ -134,42 +134,37 @@ func callbackListID(list string) string {
 }
 
 func (h *Handler) handlePaginatedTaskList(chatID int64, list string, page int, emptyMsg string) error {
-	tasks, err := h.reader.TasksInList(list)
+	if page < 0 {
+		page = 0
+	}
+
+	offset := page * tasksPageSize
+	tasks, err := h.reader.TasksInListPage(list, offset, tasksPageSize+1)
 	if err != nil {
 		return fmt.Errorf("read tasks: %w", err)
 	}
 	if len(tasks) == 0 {
+		if page > 0 {
+			return h.handlePaginatedTaskList(chatID, list, page-1, emptyMsg)
+		}
 		return h.sender.Send(chatID, emptyMsg)
 	}
 
-	text, keyboard := formatPaginatedTasks(list, tasks, page)
+	hasNext := len(tasks) > tasksPageSize
+	if hasNext {
+		tasks = tasks[:tasksPageSize]
+	}
+
+	text, keyboard := formatPaginatedTasks(list, tasks, page, hasNext)
 	return h.sender.SendWithInlineKeyboard(chatID, text, keyboard)
 }
 
-func formatPaginatedTasks(list string, tasks []reader.Task, page int) (string, tgbotapi.InlineKeyboardMarkup) {
-	items := append([]reader.Task(nil), tasks...)
-	sort.Slice(items, func(i, j int) bool {
-		return lessTaskForDisplay(items[i], items[j])
-	})
-
-	totalPages := (len(items) + tasksPageSize - 1) / tasksPageSize
-	if page < 0 {
-		page = 0
-	}
-	if page >= totalPages {
-		page = totalPages - 1
-	}
-
-	start := page * tasksPageSize
-	end := start + tasksPageSize
-	if end > len(items) {
-		end = len(items)
-	}
-
+func formatPaginatedTasks(list string, tasks []reader.Task, page int, hasNext bool) (string, tgbotapi.InlineKeyboardMarkup) {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "📋 %s — page %d/%d\n\n", list, page+1, totalPages)
-	for i, t := range items[start:end] {
-		fmt.Fprintf(&sb, "%d. %s\n", start+i+1, formatTaskLine(t, true))
+	fmt.Fprintf(&sb, "📋 %s — page %d\n\n", list, page+1)
+	startNumber := page*tasksPageSize + 1
+	for i, t := range tasks {
+		fmt.Fprintf(&sb, "%d. %s\n", startNumber+i, formatTaskLine(t, true))
 	}
 	text := strings.TrimRight(sb.String(), "\n")
 
@@ -178,7 +173,7 @@ func formatPaginatedTasks(list string, tasks []reader.Task, page int) (string, t
 	if page > 0 {
 		row = append(row, tgbotapi.NewInlineKeyboardButtonData("⬅️ Prev", fmt.Sprintf("page:%s:%d", listID, page-1)))
 	}
-	if page < totalPages-1 {
+	if hasNext {
 		row = append(row, tgbotapi.NewInlineKeyboardButtonData("Next ➡️", fmt.Sprintf("page:%s:%d", listID, page+1)))
 	}
 	if len(row) == 0 {
