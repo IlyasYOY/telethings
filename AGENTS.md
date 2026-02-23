@@ -25,7 +25,7 @@ The bot is a single binary (`cmd/telethings/main.go`) that long-polls Telegram f
 
 **Request flow:**
 1. `bot.Bot.Run` receives a Telegram update via long-polling
-2. `bot.Handler.Handle` dispatches on the command name (`/start`, `/help`, `/add`)
+2. `bot.Handler.Handle` dispatches on the command name (`/start`, `/add`, `/today`, `/inbox`)
 3. For `/add`, `parseAddCommand` in `add_parser.go` converts the message text into a `thingsurl` URL string
 4. `opener.MacOSOpener` invokes `open <url>` — this is macOS-only and triggers the Things 3 app directly
 
@@ -49,4 +49,4 @@ thingsurl.New(authToken).Add(title).WithWhen("today").WithTags("work").String()
 ```
 URL encoding uses `%20` for spaces (not `+`) — see `encodeParams` in `types.go`.
 
-**Adding a new command:** Add a case to the `switch` in `handler.go`, register it in `bot.New` via `tgbotapi.NewSetMyCommands`, and update `/help` and `/start` response text to include it.
+**Adding a new command:** Add a case to the `switch` in `handler.go`, register it in `bot.New` via `tgbotapi.NewSetMyCommands`, and update `/start` response text to include it.

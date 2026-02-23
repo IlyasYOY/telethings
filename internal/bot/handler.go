@@ -56,8 +56,6 @@ func (h *Handler) Handle(update tgbotapi.Update) error {
 	switch msg.Command() {
 	case "start":
 		return h.handleStart(msg)
-	case "help":
-		return h.handleHelp(msg)
 	case "add":
 		return h.handleAdd(msg)
 	case "today":
@@ -65,7 +63,7 @@ func (h *Handler) Handle(update tgbotapi.Update) error {
 	case "inbox":
 		return h.handleTaskList(msg, thingsListInbox, "📭 Inbox is empty!")
 	default:
-		return h.sender.Send(msg.Chat.ID, "Unknown command. Use /help to see available commands.")
+		return h.sender.Send(msg.Chat.ID, "Unknown command. Use /start to see available commands.")
 	}
 }
 
@@ -96,27 +94,30 @@ func formatInboxTasks(tasks []reader.Task) string {
 }
 
 func formatTodayTasks(tasks []reader.Task) string {
-	groups := make(map[string]map[string][]reader.Task)
+	areaGroups := make(map[string][]reader.Task)
+	projectGroups := make(map[string][]reader.Task)
 	for _, task := range tasks {
-		area := task.Area
-		if area == "" {
-			area = "Other"
+		switch {
+		case task.Area != "":
+			areaGroups[task.Area] = append(areaGroups[task.Area], task)
+		case task.Project != "":
+			projectGroups[task.Project] = append(projectGroups[task.Project], task)
+		default:
+			areaGroups["Other"] = append(areaGroups["Other"], task)
 		}
-		project := task.Project
-		if project == "" {
-			project = "Other"
-		}
-		if _, ok := groups[area]; !ok {
-			groups[area] = make(map[string][]reader.Task)
-		}
-		groups[area][project] = append(groups[area][project], task)
 	}
 
-	areas := make([]string, 0, len(groups))
-	for area := range groups {
+	areas := make([]string, 0, len(areaGroups))
+	for area := range areaGroups {
 		areas = append(areas, area)
 	}
 	sort.Strings(areas)
+
+	projects := make([]string, 0, len(projectGroups))
+	for project := range projectGroups {
+		projects = append(projects, project)
+	}
+	sort.Strings(projects)
 
 	var sb strings.Builder
 	for ai, area := range areas {
@@ -124,21 +125,30 @@ func formatTodayTasks(tasks []reader.Task) string {
 			sb.WriteString("\n\n")
 		}
 		fmt.Fprintf(&sb, "Area: %s\n", area)
-
-		projects := make([]string, 0, len(groups[area]))
-		for project := range groups[area] {
-			projects = append(projects, project)
+		items := areaGroups[area]
+		sort.Slice(items, func(i, j int) bool {
+			return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
+		})
+		for i, task := range items {
+			fmt.Fprintf(&sb, "  %d. %s\n", i+1, formatTaskLine(task, false))
 		}
-		sort.Strings(projects)
+	}
 
-		for _, project := range projects {
-			fmt.Fprintf(&sb, "  Project: %s\n", project)
-			items := groups[area][project]
+	if len(projects) > 0 {
+		if sb.Len() > 0 {
+			sb.WriteString("\n\n")
+		}
+		for pi, project := range projects {
+			if pi > 0 {
+				sb.WriteString("\n\n")
+			}
+			fmt.Fprintf(&sb, "Project: %s\n", project)
+			items := projectGroups[project]
 			sort.Slice(items, func(i, j int) bool {
 				return strings.ToLower(items[i].Title) < strings.ToLower(items[j].Title)
 			})
 			for i, task := range items {
-				fmt.Fprintf(&sb, "    %d. %s\n", i+1, formatTaskLine(task, false))
+				fmt.Fprintf(&sb, "  %d. %s\n", i+1, formatTaskLine(task, false))
 			}
 		}
 	}
@@ -191,23 +201,6 @@ func (h *Handler) handleStart(msg *tgbotapi.Message) error {
 		"/add <title> - Add a task to Things 3\n" +
 		"  Options: [when:<value>] [tags:<csv>] [notes:<text>]\n\n" +
 		"/today - Show today's tasks from Things 3\n" +
-		"/inbox - Show your Things 3 inbox\n\n" +
-		"/help - Show detailed command information\n"
-	return h.sender.Send(msg.Chat.ID, text)
-}
-
-func (h *Handler) handleHelp(msg *tgbotapi.Message) error {
-	text := "📚 Available Commands:\n\n" +
-		"**/start** - Welcome message and quick help\n\n" +
-		"**/add <title>** - Add a task to Things 3\n" +
-		"  when:<value> - Schedule timing (e.g. today, next friday)\n" +
-		"  tags:<csv> - Add tags (comma-separated)\n" +
-		"  notes:<text> - Add detailed notes\n\n" +
-		"**/today** - Show today's tasks from Things 3\n\n" +
-		"**/inbox** - Show your Things 3 inbox\n\n" +
-		"Examples:\n" +
-		"  /add Buy milk\n" +
-		"  /add Gym when:tomorrow tags:fitness\n" +
-		"  /add Review notes:check email\n"
+		"/inbox - Show your Things 3 inbox\n"
 	return h.sender.Send(msg.Chat.ID, text)
 }

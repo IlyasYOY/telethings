@@ -40,7 +40,6 @@ func New(cfg *config.Config, o opener, r thingsReader) (*Bot, error) {
 		tgbotapi.BotCommand{Command: "add", Description: "Add a task to Things 3"},
 		tgbotapi.BotCommand{Command: "today", Description: "Show today's tasks from Things 3"},
 		tgbotapi.BotCommand{Command: "inbox", Description: "Show your Things 3 inbox"},
-		tgbotapi.BotCommand{Command: "help", Description: "Show detailed command information"},
 	)
 	if _, err := api.Request(commands); err != nil {
 		return nil, fmt.Errorf("set bot commands: %w", err)
@@ -55,6 +54,7 @@ func New(cfg *config.Config, o opener, r thingsReader) (*Bot, error) {
 // Run starts long-polling and processes updates until ctx is cancelled.
 func (b *Bot) Run(ctx context.Context) error {
 	u := tgbotapi.NewUpdate(0)
+	// Keep long polling enabled to reduce request churn while waiting for updates.
 	u.Timeout = 60
 
 	updates := b.api.GetUpdatesChan(u)

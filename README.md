@@ -5,7 +5,7 @@ A Telegram bot that seamlessly integrates with the Things 3 task management app,
 ## Features
 
 - **Quick Task Addition**: Add tasks to Things 3 via simple Telegram commands
-- **Command Discovery**: Built-in `/help` and `/start` commands with command menu integration
+- **Command Discovery**: Built-in `/start` command with command menu integration
 - **Flexible Modifiers**: Enhance your tasks with:
   - `when:` - Set task timing (e.g., `when:today`, `when:next friday`)
   - `tags:` - Organize with tags (e.g., `tags:errands,personal`)
@@ -56,7 +56,6 @@ The bot will start polling for messages. Only users in the `TELETHINGS_ALLOWED_U
 Once the bot is running, you can interact with it using these commands:
 
 - **`/start`** - Welcome message with quick command overview
-- **`/help`** - Display detailed information about all available commands
 - **`/add <title>`** - Add a task to Things 3 with optional modifiers
 
 ### Usage Examples
@@ -74,7 +73,7 @@ Send these messages to your Telegram bot:
 → Creates task scheduled for tomorrow with tags
 ```
 
-Use `/help` to see all available commands and their usage directly in Telegram.
+Use `/start` to see all available commands and their usage directly in Telegram.
 
 ## Technology Stack
 
