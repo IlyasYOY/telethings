@@ -22,6 +22,9 @@ run: build
 install:
 	go install $(CMD_PATH)
 
+generate:
+	go generate ./...
+
 setup:
 	./setup.sh
 

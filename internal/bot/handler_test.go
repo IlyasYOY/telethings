@@ -1,7 +1,6 @@
 package bot_test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -20,89 +19,9 @@ type sentMessage struct {
 	keyboard     tgbotapi.InlineKeyboardMarkup
 }
 
-type fakeSender struct {
-	messages      []sentMessage
-	ackCallbacks  []string
-	typingChats   []int64
-	sendErr       error
-	sendInlineErr error
-	typingErr     error
-	ackErr        error
-}
-
-type fakeTaskStore struct {
-	tasksByNumber map[int]thingsreader.Task
-	lastSavedChat int64
-	lastScope     string
-	lastStart     int
-	lastSaved     []thingsreader.Task
-	saveErr       error
-	getErr        error
-}
-
-func (s *fakeTaskStore) SaveTaskList(chatID int64, scope string, startNumber int, tasks []thingsreader.Task) error {
-	if s.saveErr != nil {
-		return s.saveErr
-	}
-	s.lastSavedChat = chatID
-	s.lastScope = scope
-	s.lastStart = startNumber
-	s.lastSaved = append([]thingsreader.Task(nil), tasks...)
-	if s.tasksByNumber == nil {
-		s.tasksByNumber = map[int]thingsreader.Task{}
-	}
-	for i, task := range tasks {
-		s.tasksByNumber[startNumber+i] = task
-	}
-	return nil
-}
-
-func (s *fakeTaskStore) TaskByNumber(_ int64, number int) (thingsreader.Task, error) {
-	if s.getErr != nil {
-		return thingsreader.Task{}, s.getErr
-	}
-	task, ok := s.tasksByNumber[number]
-	if !ok {
-		return thingsreader.Task{}, fmt.Errorf("not found")
-	}
-	return task, nil
-}
-
-func (s *fakeSender) Send(chatID int64, text string) error {
-	if s.sendErr != nil {
-		return s.sendErr
-	}
-	s.messages = append(s.messages, sentMessage{chatID: chatID, text: text})
-	return nil
-}
-
-func (s *fakeSender) SendWithInlineKeyboard(chatID int64, text string, keyboard tgbotapi.InlineKeyboardMarkup) error {
-	if s.sendInlineErr != nil {
-		return s.sendInlineErr
-	}
-	s.messages = append(s.messages, sentMessage{chatID: chatID, text: text, withKeyboard: true, keyboard: keyboard})
-	return nil
-}
-
-func (s *fakeSender) SendTyping(chatID int64) error {
-	if s.typingErr != nil {
-		return s.typingErr
-	}
-	s.typingChats = append(s.typingChats, chatID)
-	return nil
-}
-
-func (s *fakeSender) AckCallback(callbackID string) error {
-	if s.ackErr != nil {
-		return s.ackErr
-	}
-	s.ackCallbacks = append(s.ackCallbacks, callbackID)
-	return nil
-}
-
-func newSenderMock() (*fakeSender, *[]sentMessage) {
-	sender := &fakeSender{}
-	return sender, &sender.messages
+func newSenderMock() (*RecordingSender, *[]sentMessage) {
+	sender, messages := NewRecordingSender()
+	return sender.(*RecordingSender), messages
 }
 
 func newTestUpdate(userID, chatID int64, text string) tgbotapi.Update {
@@ -809,7 +728,7 @@ func TestHandler_TaskCommand_ShowsTaskDetailsWithButtons(t *testing.T) {
 
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
-	store := &fakeTaskStore{
+	store := &RecordingTaskStore{
 		tasksByNumber: map[int]thingsreader.Task{
 			3: {ID: "abc123", Title: "Write report", Project: "Q1", Area: "Work", Deadline: "Friday", Tags: []string{"office"}, Completed: false},
 		},
@@ -841,7 +760,7 @@ func TestHandler_TaskCallback_Done_UpdatesViaReader(t *testing.T) {
 	rec := &openertest.RecordingOpener{}
 	sender, messages := newSenderMock()
 	rdr := &readertest.RecordingReader{}
-	store := &fakeTaskStore{
+	store := &RecordingTaskStore{
 		tasksByNumber: map[int]thingsreader.Task{
 			5: {ID: "task-xyz", Title: "Pay rent"},
 		},

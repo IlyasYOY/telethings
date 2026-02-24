@@ -2,6 +2,8 @@ package bot
 
 import "github.com/IlyasYOY/telethings/internal/thingsreader"
 
+//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock@v3.4.7 -i thingsReader -o reader_mock_test.go -g
+
 // thingsReader reads task lists from Things 3.
 type thingsReader interface {
 	TasksInList(list string) ([]thingsreader.Task, error)
