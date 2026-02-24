@@ -20,7 +20,7 @@ A Telegram bot that seamlessly integrates with the Things 3 task management app,
 
 - Go 1.25 or later
 - Telegram bot token (create one via [@BotFather](https://t.me/BotFather))
-- Things 3 app on macOS
+- Things 3 app on macOS (local)
 
 ### Installation
 

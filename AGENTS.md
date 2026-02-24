@@ -12,7 +12,7 @@ make run          # build + run
 Run a single test:
 ```bash
 go test ./internal/bot/... -run TestHandler_HandleAdd_ValidCommand
-go test ./internal/thingsurl/... -run TestAdd_Title
+go test ./internal/... -run TestAdd_Title
 ```
 
 Required environment variables to run the bot:
@@ -26,15 +26,17 @@ The bot is a single binary (`cmd/telethings/main.go`) that long-polls Telegram f
 **Request flow:**
 1. `bot.Bot.Run` receives a Telegram update via long-polling
 2. `bot.Handler.Handle` dispatches on the command name (`/start`, `/add`, `/today`, `/inbox`)
-3. For `/add`, `parseAddCommand` in `add_parser.go` converts the message text into a `thingsurl` URL string
+3. For `/add`, `parseAddCommand` in `add_parser.go` converts the message text into a Things 3 URL string
 4. `opener.MacOSOpener` invokes `open <url>` — this is macOS-only and triggers the Things 3 app directly
 
 **Package responsibilities:**
 - `internal/bot` — Telegram update handling, command parsing, `MessageSender` interface
 - `internal/thingsreader` — reads Things 3 tasks via AppleScript (including paged list reads)
-- `internal/thingsurl` — fluent builder for Things 3 URL scheme (`things:///add?...`)
+- URL construction — a fluent builder produces Things 3 URL scheme strings (e.g. `things:///add?...`) used by the bot
 - `internal/config` — reads env vars; returns typed errors for each missing variable
 - `internal/opener` — `MacOSOpener` (production) and `openertest.RecordingOpener` (tests)
+
+URL encoding uses `%20` for spaces (not `+`).
 
 ## Key Conventions
 
