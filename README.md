@@ -51,9 +51,9 @@ export TELETHINGS_ALLOWED_USER_IDS=123456789,987654321
 
 The bot will start polling for messages. Only users in the `TELETHINGS_ALLOWED_USER_IDS` list can interact with the bot.
 
-For running as a background service on macOS, see [SETUP.md](./SETUP.md).
+For running as a background service on macOS, see [setup.sh](./setup.sh).
 Quick option: `make setup` (interactive wizard).
-To uninstall background setup: `make setup-remove`.
+To uninstall background setup: `make cleanup`.
 
 ### Available Commands
 

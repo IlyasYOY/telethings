@@ -53,3 +53,5 @@ thingsurl.New(authToken).Add(title).WithWhen("today").WithTags("work").String()
 URL encoding uses `%20` for spaces (not `+`) — see `encodeParams` in `types.go`.
 
 **Adding a new command:** Add a case to the `switch` in `handler.go`, register it in `bot.New` via `tgbotapi.NewSetMyCommands`, and update `/start` response text to include it.
+
+**Mocks:** Use minimock (via `//go:generate`) for all interface mocks in tests — do not write hand-crafted fakes. Generate mock files into `package bot_test` using the `-p bot_test` flag so they are accessible from external test packages.

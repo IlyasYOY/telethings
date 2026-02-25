@@ -17,7 +17,7 @@ const thingsListAnytime = "Anytime"
 const thingsListSomeday = "Someday"
 const tasksPageSize = 10
 
-//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock@v3.4.7  -i MessageSender -o message_sender_mock_test.go -g
+//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock@v3.4.7  -i MessageSender -o message_sender_mock_test.go -p bot_test -g
 
 // MessageSender sends text replies to a Telegram chat.
 type MessageSender interface {

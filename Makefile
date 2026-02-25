@@ -1,4 +1,4 @@
-.PHONY: test vet build run install setup setup-remove clean
+.PHONY: test coverage vet build run install setup cleanup clean
 
 # Build directory
 BIN_DIR := ./bin
@@ -9,6 +9,12 @@ CMD_PATH := ./cmd/telethings
 
 test:
 	go test ./...
+
+coverage:
+	go test -coverprofile=coverage.out -coverpkg=./... ./...
+	go tool cover -func=coverage.out \
+		| sort \
+		| sed "s|github.com/IlyasYOY/telethings|$(shell pwd)|g"
 
 vet:
 	go vet ./...
@@ -28,8 +34,8 @@ generate:
 setup:
 	./setup.sh
 
-setup-remove:
-	./setup_remove.sh
+cleanup:
+	./cleanup.sh
 
 clean:
 	rm -rf $(BIN_DIR)
