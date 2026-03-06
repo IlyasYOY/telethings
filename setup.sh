@@ -8,7 +8,7 @@ fi
 
 repo_root="$(cd "$(dirname "$0")" && pwd)"
 default_env="$HOME/.config/telethings/env"
-default_label="com.ilyasyoy.telethings"
+default_label="io.github.ilyasyoy.telethings"
 default_plist="$HOME/Library/LaunchAgents/${default_label}.plist"
 binary_path="$repo_root/bin/telethings"
 
@@ -28,7 +28,7 @@ echo
 echo "Enter bot configuration values."
 read -r -p "TELETHINGS_TELEGRAM_TOKEN: " telegram_token
 read -r -p "TELETHINGS_ALLOWED_USER_IDS (comma-separated): " allowed_user_ids
-read -r -p "TELETHINGS_DB_DSN (optional, empty = in-memory): " db_dsn
+read -r -p "TELETHINGS_DB_DSN (leave empty for XDG default: ~/.local/share/telethings/telethings.db): " db_dsn
 
 read -r -p "Env file path [$default_env]: " env_path
 env_path="${env_path:-$default_env}"

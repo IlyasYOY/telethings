@@ -1,4 +1,4 @@
-.PHONY: test coverage vet build run install setup cleanup clean
+.PHONY: test coverage vet build run install setup update cleanup clean
 
 # Build directory
 BIN_DIR := ./bin
@@ -33,6 +33,9 @@ generate:
 
 setup:
 	./setup.sh
+
+update:
+	./update.sh
 
 cleanup:
 	./cleanup.sh

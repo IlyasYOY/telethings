@@ -6,7 +6,7 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
-default_label="com.ilyasyoy.telethings"
+default_label="io.github.ilyasyoy.telethings"
 default_plist="$HOME/Library/LaunchAgents/${default_label}.plist"
 default_env="$HOME/.config/telethings/env"
 

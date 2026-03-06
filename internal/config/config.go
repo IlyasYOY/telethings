@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -45,11 +46,30 @@ func FromEnv() (*Config, error) {
 		return nil, ErrInvalidAllowedUserIDs
 	}
 
+	dsn := strings.TrimSpace(os.Getenv(envDBDSN))
+	if dsn == "" {
+		dsn = defaultDBDSN()
+	}
+
 	return &Config{
 		TelegramToken:  telegramToken,
 		AllowedUserIDs: allowedUserIDs,
-		DBDSN:          strings.TrimSpace(os.Getenv(envDBDSN)),
+		DBDSN:          dsn,
 	}, nil
+}
+
+// defaultDBDSN returns the default SQLite DSN using the XDG data directory.
+// It falls back to in-memory SQLite if the home directory cannot be determined.
+func defaultDBDSN() string {
+	dataHome := os.Getenv("XDG_DATA_HOME")
+	if dataHome == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "file:telethings?mode=memory&cache=shared"
+		}
+		dataHome = filepath.Join(home, ".local", "share")
+	}
+	return "file:" + filepath.Join(dataHome, "telethings", "telethings.db")
 }
 
 // parseUserIDs converts a comma-separated string of user IDs to a slice of int64.

@@ -399,5 +399,6 @@ func parseTagsListOutput(out []byte) []Tag {
 }
 
 func escapeAppleScriptString(value string) string {
-	return strings.ReplaceAll(value, `"`, `\"`)
+	s := strings.ReplaceAll(value, `\`, `\\`)
+	return strings.ReplaceAll(s, `"`, `\"`)
 }

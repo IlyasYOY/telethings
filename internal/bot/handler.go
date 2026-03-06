@@ -63,7 +63,7 @@ func (h *Handler) Handle(update tgbotapi.Update) error {
 	}
 
 	// Check if user is allowed
-	if !h.allowedUserIDs[msg.From.ID] {
+	if msg.From == nil || !h.allowedUserIDs[msg.From.ID] {
 		return nil
 	}
 

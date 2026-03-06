@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/IlyasYOY/telethings/internal/config"
@@ -10,6 +11,7 @@ import (
 func TestFromEnv_Success(t *testing.T) {
 	t.Setenv("TELETHINGS_TELEGRAM_TOKEN", "tok123")
 	t.Setenv("TELETHINGS_ALLOWED_USER_IDS", "123,456,789")
+	t.Setenv("TELETHINGS_DB_DSN", "")
 
 	cfg, err := config.FromEnv()
 	if err != nil {
@@ -26,6 +28,9 @@ func TestFromEnv_Success(t *testing.T) {
 		if id != expectedIDs[i] {
 			t.Errorf("AllowedUserIDs[%d] = %d, want %d", i, id, expectedIDs[i])
 		}
+	}
+	if cfg.DBDSN == "" {
+		t.Error("DBDSN should not be empty when TELETHINGS_DB_DSN is unset")
 	}
 }
 
@@ -69,6 +74,20 @@ func TestFromEnv_AllowedUserIDsWithWhitespace(t *testing.T) {
 	}
 	if len(cfg.AllowedUserIDs) != 3 {
 		t.Errorf("AllowedUserIDs count = %d, want 3", len(cfg.AllowedUserIDs))
+	}
+}
+
+func TestFromEnv_DBDSNDefault(t *testing.T) {
+	t.Setenv("TELETHINGS_TELEGRAM_TOKEN", "tok123")
+	t.Setenv("TELETHINGS_ALLOWED_USER_IDS", "123")
+	t.Setenv("TELETHINGS_DB_DSN", "")
+
+	cfg, err := config.FromEnv()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(cfg.DBDSN, "telethings.db") {
+		t.Errorf("default DBDSN = %q, want it to contain telethings.db", cfg.DBDSN)
 	}
 }
 

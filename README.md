@@ -53,6 +53,7 @@ The bot will start polling for messages. Only users in the `TELETHINGS_ALLOWED_U
 
 For running as a background service on macOS, see [setup.sh](./setup.sh).
 Quick option: `make setup` (interactive wizard).
+To update the running binary after pulling new code: `make update`.
 To uninstall background setup: `make cleanup`.
 
 ### Available Commands
@@ -97,14 +98,16 @@ The bot requires the following environment variables:
 
 - `TELETHINGS_TELEGRAM_TOKEN` - Your Telegram bot token (required)
 - `TELETHINGS_ALLOWED_USER_IDS` - Comma-separated list of Telegram user IDs allowed to use the bot (required)
-- `TELETHINGS_DB_DSN` - Optional SQLite DSN/connection string (default: in-memory SQLite)
+- `TELETHINGS_DB_DSN` - Optional SQLite DSN/connection string (default: `$XDG_DATA_HOME/telethings/telethings.db`, typically `~/.local/share/telethings/telethings.db`)
 
 Example:
 ```bash
 export TELETHINGS_TELEGRAM_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
 export TELETHINGS_ALLOWED_USER_IDS=123456789,987654321,555555555
-export TELETHINGS_DB_DSN=file:telethings.db
+export TELETHINGS_DB_DSN=file:$HOME/.local/share/telethings/telethings.db
 ```
+
+> **Tip:** To find your Telegram user ID, message [@userinfobot](https://t.me/userinfobot) on Telegram and it will reply with your user ID.
 
 Only users whose Telegram IDs are in the `TELETHINGS_ALLOWED_USER_IDS` list can interact with the bot.
 
