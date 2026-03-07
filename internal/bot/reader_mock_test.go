@@ -7,7 +7,7 @@ import (
 	mm_atomic "sync/atomic"
 	mm_time "time"
 
-	"github.com/IlyasYOY/telethings/internal/thingsreader"
+	"github.com/IlyasYOY/telethings/internal/thingser"
 	"github.com/gojuno/minimock/v3"
 )
 
@@ -16,9 +16,9 @@ type ThingsReaderMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
 
-	funcAddTask          func(input thingsreader.AddTaskInput) (t1 thingsreader.Task, err error)
+	funcAddTask          func(input thingser.AddTaskInput) (t1 thingser.Task, err error)
 	funcAddTaskOrigin    string
-	inspectFuncAddTask   func(input thingsreader.AddTaskInput)
+	inspectFuncAddTask   func(input thingser.AddTaskInput)
 	afterAddTaskCounter  uint64
 	beforeAddTaskCounter uint64
 	AddTaskMock          mThingsReaderMockAddTask
@@ -37,28 +37,28 @@ type ThingsReaderMock struct {
 	beforeSetTaskCompletedCounter uint64
 	SetTaskCompletedMock          mThingsReaderMockSetTaskCompleted
 
-	funcTags          func() (ta1 []thingsreader.Tag, err error)
+	funcTags          func() (ta1 []thingser.Tag, err error)
 	funcTagsOrigin    string
 	inspectFuncTags   func()
 	afterTagsCounter  uint64
 	beforeTagsCounter uint64
 	TagsMock          mThingsReaderMockTags
 
-	funcTasksByTagPage          func(tag string, offset int, limit int) (ta1 []thingsreader.Task, err error)
+	funcTasksByTagPage          func(tag string, offset int, limit int) (ta1 []thingser.Task, err error)
 	funcTasksByTagPageOrigin    string
 	inspectFuncTasksByTagPage   func(tag string, offset int, limit int)
 	afterTasksByTagPageCounter  uint64
 	beforeTasksByTagPageCounter uint64
 	TasksByTagPageMock          mThingsReaderMockTasksByTagPage
 
-	funcTasksInList          func(list string) (ta1 []thingsreader.Task, err error)
+	funcTasksInList          func(list string) (ta1 []thingser.Task, err error)
 	funcTasksInListOrigin    string
 	inspectFuncTasksInList   func(list string)
 	afterTasksInListCounter  uint64
 	beforeTasksInListCounter uint64
 	TasksInListMock          mThingsReaderMockTasksInList
 
-	funcTasksInListPage          func(list string, offset int, limit int) (ta1 []thingsreader.Task, err error)
+	funcTasksInListPage          func(list string, offset int, limit int) (ta1 []thingser.Task, err error)
 	funcTasksInListPageOrigin    string
 	inspectFuncTasksInListPage   func(list string, offset int, limit int)
 	afterTasksInListPageCounter  uint64
@@ -125,17 +125,17 @@ type ThingsReaderMockAddTaskExpectation struct {
 
 // ThingsReaderMockAddTaskParams contains parameters of the thingsReader.AddTask
 type ThingsReaderMockAddTaskParams struct {
-	input thingsreader.AddTaskInput
+	input thingser.AddTaskInput
 }
 
 // ThingsReaderMockAddTaskParamPtrs contains pointers to parameters of the thingsReader.AddTask
 type ThingsReaderMockAddTaskParamPtrs struct {
-	input *thingsreader.AddTaskInput
+	input *thingser.AddTaskInput
 }
 
 // ThingsReaderMockAddTaskResults contains results of the thingsReader.AddTask
 type ThingsReaderMockAddTaskResults struct {
-	t1  thingsreader.Task
+	t1  thingser.Task
 	err error
 }
 
@@ -156,7 +156,7 @@ func (mmAddTask *mThingsReaderMockAddTask) Optional() *mThingsReaderMockAddTask 
 }
 
 // Expect sets up expected params for thingsReader.AddTask
-func (mmAddTask *mThingsReaderMockAddTask) Expect(input thingsreader.AddTaskInput) *mThingsReaderMockAddTask {
+func (mmAddTask *mThingsReaderMockAddTask) Expect(input thingser.AddTaskInput) *mThingsReaderMockAddTask {
 	if mmAddTask.mock.funcAddTask != nil {
 		mmAddTask.mock.t.Fatalf("ThingsReaderMock.AddTask mock is already set by Set")
 	}
@@ -181,7 +181,7 @@ func (mmAddTask *mThingsReaderMockAddTask) Expect(input thingsreader.AddTaskInpu
 }
 
 // ExpectInputParam1 sets up expected param input for thingsReader.AddTask
-func (mmAddTask *mThingsReaderMockAddTask) ExpectInputParam1(input thingsreader.AddTaskInput) *mThingsReaderMockAddTask {
+func (mmAddTask *mThingsReaderMockAddTask) ExpectInputParam1(input thingser.AddTaskInput) *mThingsReaderMockAddTask {
 	if mmAddTask.mock.funcAddTask != nil {
 		mmAddTask.mock.t.Fatalf("ThingsReaderMock.AddTask mock is already set by Set")
 	}
@@ -204,7 +204,7 @@ func (mmAddTask *mThingsReaderMockAddTask) ExpectInputParam1(input thingsreader.
 }
 
 // Inspect accepts an inspector function that has same arguments as the thingsReader.AddTask
-func (mmAddTask *mThingsReaderMockAddTask) Inspect(f func(input thingsreader.AddTaskInput)) *mThingsReaderMockAddTask {
+func (mmAddTask *mThingsReaderMockAddTask) Inspect(f func(input thingser.AddTaskInput)) *mThingsReaderMockAddTask {
 	if mmAddTask.mock.inspectFuncAddTask != nil {
 		mmAddTask.mock.t.Fatalf("Inspect function is already set for ThingsReaderMock.AddTask")
 	}
@@ -215,7 +215,7 @@ func (mmAddTask *mThingsReaderMockAddTask) Inspect(f func(input thingsreader.Add
 }
 
 // Return sets up results that will be returned by thingsReader.AddTask
-func (mmAddTask *mThingsReaderMockAddTask) Return(t1 thingsreader.Task, err error) *ThingsReaderMock {
+func (mmAddTask *mThingsReaderMockAddTask) Return(t1 thingser.Task, err error) *ThingsReaderMock {
 	if mmAddTask.mock.funcAddTask != nil {
 		mmAddTask.mock.t.Fatalf("ThingsReaderMock.AddTask mock is already set by Set")
 	}
@@ -229,7 +229,7 @@ func (mmAddTask *mThingsReaderMockAddTask) Return(t1 thingsreader.Task, err erro
 }
 
 // Set uses given function f to mock the thingsReader.AddTask method
-func (mmAddTask *mThingsReaderMockAddTask) Set(f func(input thingsreader.AddTaskInput) (t1 thingsreader.Task, err error)) *ThingsReaderMock {
+func (mmAddTask *mThingsReaderMockAddTask) Set(f func(input thingser.AddTaskInput) (t1 thingser.Task, err error)) *ThingsReaderMock {
 	if mmAddTask.defaultExpectation != nil {
 		mmAddTask.mock.t.Fatalf("Default expectation is already set for the thingsReader.AddTask method")
 	}
@@ -245,7 +245,7 @@ func (mmAddTask *mThingsReaderMockAddTask) Set(f func(input thingsreader.AddTask
 
 // When sets expectation for the thingsReader.AddTask which will trigger the result defined by the following
 // Then helper
-func (mmAddTask *mThingsReaderMockAddTask) When(input thingsreader.AddTaskInput) *ThingsReaderMockAddTaskExpectation {
+func (mmAddTask *mThingsReaderMockAddTask) When(input thingser.AddTaskInput) *ThingsReaderMockAddTaskExpectation {
 	if mmAddTask.mock.funcAddTask != nil {
 		mmAddTask.mock.t.Fatalf("ThingsReaderMock.AddTask mock is already set by Set")
 	}
@@ -260,7 +260,7 @@ func (mmAddTask *mThingsReaderMockAddTask) When(input thingsreader.AddTaskInput)
 }
 
 // Then sets up thingsReader.AddTask return parameters for the expectation previously defined by the When method
-func (e *ThingsReaderMockAddTaskExpectation) Then(t1 thingsreader.Task, err error) *ThingsReaderMock {
+func (e *ThingsReaderMockAddTaskExpectation) Then(t1 thingser.Task, err error) *ThingsReaderMock {
 	e.results = &ThingsReaderMockAddTaskResults{t1, err}
 	return e.mock
 }
@@ -287,7 +287,7 @@ func (mmAddTask *mThingsReaderMockAddTask) invocationsDone() bool {
 }
 
 // AddTask implements thingsReader
-func (mmAddTask *ThingsReaderMock) AddTask(input thingsreader.AddTaskInput) (t1 thingsreader.Task, err error) {
+func (mmAddTask *ThingsReaderMock) AddTask(input thingser.AddTaskInput) (t1 thingser.Task, err error) {
 	mm_atomic.AddUint64(&mmAddTask.beforeAddTaskCounter, 1)
 	defer mm_atomic.AddUint64(&mmAddTask.afterAddTaskCounter, 1)
 
@@ -1116,7 +1116,7 @@ type ThingsReaderMockTagsExpectation struct {
 
 // ThingsReaderMockTagsResults contains results of the thingsReader.Tags
 type ThingsReaderMockTagsResults struct {
-	ta1 []thingsreader.Tag
+	ta1 []thingser.Tag
 	err error
 }
 
@@ -1155,7 +1155,7 @@ func (mmTags *mThingsReaderMockTags) Inspect(f func()) *mThingsReaderMockTags {
 }
 
 // Return sets up results that will be returned by thingsReader.Tags
-func (mmTags *mThingsReaderMockTags) Return(ta1 []thingsreader.Tag, err error) *ThingsReaderMock {
+func (mmTags *mThingsReaderMockTags) Return(ta1 []thingser.Tag, err error) *ThingsReaderMock {
 	if mmTags.mock.funcTags != nil {
 		mmTags.mock.t.Fatalf("ThingsReaderMock.Tags mock is already set by Set")
 	}
@@ -1169,7 +1169,7 @@ func (mmTags *mThingsReaderMockTags) Return(ta1 []thingsreader.Tag, err error) *
 }
 
 // Set uses given function f to mock the thingsReader.Tags method
-func (mmTags *mThingsReaderMockTags) Set(f func() (ta1 []thingsreader.Tag, err error)) *ThingsReaderMock {
+func (mmTags *mThingsReaderMockTags) Set(f func() (ta1 []thingser.Tag, err error)) *ThingsReaderMock {
 	if mmTags.defaultExpectation != nil {
 		mmTags.mock.t.Fatalf("Default expectation is already set for the thingsReader.Tags method")
 	}
@@ -1205,7 +1205,7 @@ func (mmTags *mThingsReaderMockTags) invocationsDone() bool {
 }
 
 // Tags implements thingsReader
-func (mmTags *ThingsReaderMock) Tags() (ta1 []thingsreader.Tag, err error) {
+func (mmTags *ThingsReaderMock) Tags() (ta1 []thingser.Tag, err error) {
 	mm_atomic.AddUint64(&mmTags.beforeTagsCounter, 1)
 	defer mm_atomic.AddUint64(&mmTags.afterTagsCounter, 1)
 
@@ -1322,7 +1322,7 @@ type ThingsReaderMockTasksByTagPageParamPtrs struct {
 
 // ThingsReaderMockTasksByTagPageResults contains results of the thingsReader.TasksByTagPage
 type ThingsReaderMockTasksByTagPageResults struct {
-	ta1 []thingsreader.Task
+	ta1 []thingser.Task
 	err error
 }
 
@@ -1450,7 +1450,7 @@ func (mmTasksByTagPage *mThingsReaderMockTasksByTagPage) Inspect(f func(tag stri
 }
 
 // Return sets up results that will be returned by thingsReader.TasksByTagPage
-func (mmTasksByTagPage *mThingsReaderMockTasksByTagPage) Return(ta1 []thingsreader.Task, err error) *ThingsReaderMock {
+func (mmTasksByTagPage *mThingsReaderMockTasksByTagPage) Return(ta1 []thingser.Task, err error) *ThingsReaderMock {
 	if mmTasksByTagPage.mock.funcTasksByTagPage != nil {
 		mmTasksByTagPage.mock.t.Fatalf("ThingsReaderMock.TasksByTagPage mock is already set by Set")
 	}
@@ -1464,7 +1464,7 @@ func (mmTasksByTagPage *mThingsReaderMockTasksByTagPage) Return(ta1 []thingsread
 }
 
 // Set uses given function f to mock the thingsReader.TasksByTagPage method
-func (mmTasksByTagPage *mThingsReaderMockTasksByTagPage) Set(f func(tag string, offset int, limit int) (ta1 []thingsreader.Task, err error)) *ThingsReaderMock {
+func (mmTasksByTagPage *mThingsReaderMockTasksByTagPage) Set(f func(tag string, offset int, limit int) (ta1 []thingser.Task, err error)) *ThingsReaderMock {
 	if mmTasksByTagPage.defaultExpectation != nil {
 		mmTasksByTagPage.mock.t.Fatalf("Default expectation is already set for the thingsReader.TasksByTagPage method")
 	}
@@ -1495,7 +1495,7 @@ func (mmTasksByTagPage *mThingsReaderMockTasksByTagPage) When(tag string, offset
 }
 
 // Then sets up thingsReader.TasksByTagPage return parameters for the expectation previously defined by the When method
-func (e *ThingsReaderMockTasksByTagPageExpectation) Then(ta1 []thingsreader.Task, err error) *ThingsReaderMock {
+func (e *ThingsReaderMockTasksByTagPageExpectation) Then(ta1 []thingser.Task, err error) *ThingsReaderMock {
 	e.results = &ThingsReaderMockTasksByTagPageResults{ta1, err}
 	return e.mock
 }
@@ -1522,7 +1522,7 @@ func (mmTasksByTagPage *mThingsReaderMockTasksByTagPage) invocationsDone() bool 
 }
 
 // TasksByTagPage implements thingsReader
-func (mmTasksByTagPage *ThingsReaderMock) TasksByTagPage(tag string, offset int, limit int) (ta1 []thingsreader.Task, err error) {
+func (mmTasksByTagPage *ThingsReaderMock) TasksByTagPage(tag string, offset int, limit int) (ta1 []thingser.Task, err error) {
 	mm_atomic.AddUint64(&mmTasksByTagPage.beforeTasksByTagPageCounter, 1)
 	defer mm_atomic.AddUint64(&mmTasksByTagPage.afterTasksByTagPageCounter, 1)
 
@@ -1692,7 +1692,7 @@ type ThingsReaderMockTasksInListParamPtrs struct {
 
 // ThingsReaderMockTasksInListResults contains results of the thingsReader.TasksInList
 type ThingsReaderMockTasksInListResults struct {
-	ta1 []thingsreader.Task
+	ta1 []thingser.Task
 	err error
 }
 
@@ -1772,7 +1772,7 @@ func (mmTasksInList *mThingsReaderMockTasksInList) Inspect(f func(list string)) 
 }
 
 // Return sets up results that will be returned by thingsReader.TasksInList
-func (mmTasksInList *mThingsReaderMockTasksInList) Return(ta1 []thingsreader.Task, err error) *ThingsReaderMock {
+func (mmTasksInList *mThingsReaderMockTasksInList) Return(ta1 []thingser.Task, err error) *ThingsReaderMock {
 	if mmTasksInList.mock.funcTasksInList != nil {
 		mmTasksInList.mock.t.Fatalf("ThingsReaderMock.TasksInList mock is already set by Set")
 	}
@@ -1786,7 +1786,7 @@ func (mmTasksInList *mThingsReaderMockTasksInList) Return(ta1 []thingsreader.Tas
 }
 
 // Set uses given function f to mock the thingsReader.TasksInList method
-func (mmTasksInList *mThingsReaderMockTasksInList) Set(f func(list string) (ta1 []thingsreader.Task, err error)) *ThingsReaderMock {
+func (mmTasksInList *mThingsReaderMockTasksInList) Set(f func(list string) (ta1 []thingser.Task, err error)) *ThingsReaderMock {
 	if mmTasksInList.defaultExpectation != nil {
 		mmTasksInList.mock.t.Fatalf("Default expectation is already set for the thingsReader.TasksInList method")
 	}
@@ -1817,7 +1817,7 @@ func (mmTasksInList *mThingsReaderMockTasksInList) When(list string) *ThingsRead
 }
 
 // Then sets up thingsReader.TasksInList return parameters for the expectation previously defined by the When method
-func (e *ThingsReaderMockTasksInListExpectation) Then(ta1 []thingsreader.Task, err error) *ThingsReaderMock {
+func (e *ThingsReaderMockTasksInListExpectation) Then(ta1 []thingser.Task, err error) *ThingsReaderMock {
 	e.results = &ThingsReaderMockTasksInListResults{ta1, err}
 	return e.mock
 }
@@ -1844,7 +1844,7 @@ func (mmTasksInList *mThingsReaderMockTasksInList) invocationsDone() bool {
 }
 
 // TasksInList implements thingsReader
-func (mmTasksInList *ThingsReaderMock) TasksInList(list string) (ta1 []thingsreader.Task, err error) {
+func (mmTasksInList *ThingsReaderMock) TasksInList(list string) (ta1 []thingser.Task, err error) {
 	mm_atomic.AddUint64(&mmTasksInList.beforeTasksInListCounter, 1)
 	defer mm_atomic.AddUint64(&mmTasksInList.afterTasksInListCounter, 1)
 
@@ -2008,7 +2008,7 @@ type ThingsReaderMockTasksInListPageParamPtrs struct {
 
 // ThingsReaderMockTasksInListPageResults contains results of the thingsReader.TasksInListPage
 type ThingsReaderMockTasksInListPageResults struct {
-	ta1 []thingsreader.Task
+	ta1 []thingser.Task
 	err error
 }
 
@@ -2136,7 +2136,7 @@ func (mmTasksInListPage *mThingsReaderMockTasksInListPage) Inspect(f func(list s
 }
 
 // Return sets up results that will be returned by thingsReader.TasksInListPage
-func (mmTasksInListPage *mThingsReaderMockTasksInListPage) Return(ta1 []thingsreader.Task, err error) *ThingsReaderMock {
+func (mmTasksInListPage *mThingsReaderMockTasksInListPage) Return(ta1 []thingser.Task, err error) *ThingsReaderMock {
 	if mmTasksInListPage.mock.funcTasksInListPage != nil {
 		mmTasksInListPage.mock.t.Fatalf("ThingsReaderMock.TasksInListPage mock is already set by Set")
 	}
@@ -2150,7 +2150,7 @@ func (mmTasksInListPage *mThingsReaderMockTasksInListPage) Return(ta1 []thingsre
 }
 
 // Set uses given function f to mock the thingsReader.TasksInListPage method
-func (mmTasksInListPage *mThingsReaderMockTasksInListPage) Set(f func(list string, offset int, limit int) (ta1 []thingsreader.Task, err error)) *ThingsReaderMock {
+func (mmTasksInListPage *mThingsReaderMockTasksInListPage) Set(f func(list string, offset int, limit int) (ta1 []thingser.Task, err error)) *ThingsReaderMock {
 	if mmTasksInListPage.defaultExpectation != nil {
 		mmTasksInListPage.mock.t.Fatalf("Default expectation is already set for the thingsReader.TasksInListPage method")
 	}
@@ -2181,7 +2181,7 @@ func (mmTasksInListPage *mThingsReaderMockTasksInListPage) When(list string, off
 }
 
 // Then sets up thingsReader.TasksInListPage return parameters for the expectation previously defined by the When method
-func (e *ThingsReaderMockTasksInListPageExpectation) Then(ta1 []thingsreader.Task, err error) *ThingsReaderMock {
+func (e *ThingsReaderMockTasksInListPageExpectation) Then(ta1 []thingser.Task, err error) *ThingsReaderMock {
 	e.results = &ThingsReaderMockTasksInListPageResults{ta1, err}
 	return e.mock
 }
@@ -2208,7 +2208,7 @@ func (mmTasksInListPage *mThingsReaderMockTasksInListPage) invocationsDone() boo
 }
 
 // TasksInListPage implements thingsReader
-func (mmTasksInListPage *ThingsReaderMock) TasksInListPage(list string, offset int, limit int) (ta1 []thingsreader.Task, err error) {
+func (mmTasksInListPage *ThingsReaderMock) TasksInListPage(list string, offset int, limit int) (ta1 []thingser.Task, err error) {
 	mm_atomic.AddUint64(&mmTasksInListPage.beforeTasksInListPageCounter, 1)
 	defer mm_atomic.AddUint64(&mmTasksInListPage.afterTasksInListPageCounter, 1)
 

@@ -11,7 +11,7 @@ import (
 	"github.com/IlyasYOY/telethings/internal/config"
 	"github.com/IlyasYOY/telethings/internal/db"
 	"github.com/IlyasYOY/telethings/internal/opener"
-	"github.com/IlyasYOY/telethings/internal/thingsreader"
+	"github.com/IlyasYOY/telethings/internal/thingser"
 )
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 
 	store := db.NewTaskStore(conn)
 
-	b, err := bot.New(cfg, opener.MacOSOpener{}, thingsreader.AppleScriptReader{}, store)
+	b, err := bot.New(cfg, opener.MacOSOpener{}, thingser.AppleScriptReader{}, store)
 	if err != nil {
 		log.Fatalf("bot: %v", err)
 	}

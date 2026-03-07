@@ -7,7 +7,7 @@ import (
 	mm_atomic "sync/atomic"
 	mm_time "time"
 
-	"github.com/IlyasYOY/telethings/internal/thingsreader"
+	"github.com/IlyasYOY/telethings/internal/thingser"
 	"github.com/gojuno/minimock/v3"
 )
 
@@ -16,14 +16,14 @@ type TaskStoreMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
 
-	funcSaveTaskList          func(chatID int64, scope string, startNumber int, tasks []thingsreader.Task) (err error)
+	funcSaveTaskList          func(chatID int64, scope string, startNumber int, tasks []thingser.Task) (err error)
 	funcSaveTaskListOrigin    string
-	inspectFuncSaveTaskList   func(chatID int64, scope string, startNumber int, tasks []thingsreader.Task)
+	inspectFuncSaveTaskList   func(chatID int64, scope string, startNumber int, tasks []thingser.Task)
 	afterSaveTaskListCounter  uint64
 	beforeSaveTaskListCounter uint64
 	SaveTaskListMock          mTaskStoreMockSaveTaskList
 
-	funcTaskByNumber          func(chatID int64, number int) (t1 thingsreader.Task, err error)
+	funcTaskByNumber          func(chatID int64, number int) (t1 thingser.Task, err error)
 	funcTaskByNumberOrigin    string
 	inspectFuncTaskByNumber   func(chatID int64, number int)
 	afterTaskByNumberCounter  uint64
@@ -79,7 +79,7 @@ type TaskStoreMockSaveTaskListParams struct {
 	chatID      int64
 	scope       string
 	startNumber int
-	tasks       []thingsreader.Task
+	tasks       []thingser.Task
 }
 
 // TaskStoreMockSaveTaskListParamPtrs contains pointers to parameters of the taskStore.SaveTaskList
@@ -87,7 +87,7 @@ type TaskStoreMockSaveTaskListParamPtrs struct {
 	chatID      *int64
 	scope       *string
 	startNumber *int
-	tasks       *[]thingsreader.Task
+	tasks       *[]thingser.Task
 }
 
 // TaskStoreMockSaveTaskListResults contains results of the taskStore.SaveTaskList
@@ -115,7 +115,7 @@ func (mmSaveTaskList *mTaskStoreMockSaveTaskList) Optional() *mTaskStoreMockSave
 }
 
 // Expect sets up expected params for taskStore.SaveTaskList
-func (mmSaveTaskList *mTaskStoreMockSaveTaskList) Expect(chatID int64, scope string, startNumber int, tasks []thingsreader.Task) *mTaskStoreMockSaveTaskList {
+func (mmSaveTaskList *mTaskStoreMockSaveTaskList) Expect(chatID int64, scope string, startNumber int, tasks []thingser.Task) *mTaskStoreMockSaveTaskList {
 	if mmSaveTaskList.mock.funcSaveTaskList != nil {
 		mmSaveTaskList.mock.t.Fatalf("TaskStoreMock.SaveTaskList mock is already set by Set")
 	}
@@ -209,7 +209,7 @@ func (mmSaveTaskList *mTaskStoreMockSaveTaskList) ExpectStartNumberParam3(startN
 }
 
 // ExpectTasksParam4 sets up expected param tasks for taskStore.SaveTaskList
-func (mmSaveTaskList *mTaskStoreMockSaveTaskList) ExpectTasksParam4(tasks []thingsreader.Task) *mTaskStoreMockSaveTaskList {
+func (mmSaveTaskList *mTaskStoreMockSaveTaskList) ExpectTasksParam4(tasks []thingser.Task) *mTaskStoreMockSaveTaskList {
 	if mmSaveTaskList.mock.funcSaveTaskList != nil {
 		mmSaveTaskList.mock.t.Fatalf("TaskStoreMock.SaveTaskList mock is already set by Set")
 	}
@@ -232,7 +232,7 @@ func (mmSaveTaskList *mTaskStoreMockSaveTaskList) ExpectTasksParam4(tasks []thin
 }
 
 // Inspect accepts an inspector function that has same arguments as the taskStore.SaveTaskList
-func (mmSaveTaskList *mTaskStoreMockSaveTaskList) Inspect(f func(chatID int64, scope string, startNumber int, tasks []thingsreader.Task)) *mTaskStoreMockSaveTaskList {
+func (mmSaveTaskList *mTaskStoreMockSaveTaskList) Inspect(f func(chatID int64, scope string, startNumber int, tasks []thingser.Task)) *mTaskStoreMockSaveTaskList {
 	if mmSaveTaskList.mock.inspectFuncSaveTaskList != nil {
 		mmSaveTaskList.mock.t.Fatalf("Inspect function is already set for TaskStoreMock.SaveTaskList")
 	}
@@ -257,7 +257,7 @@ func (mmSaveTaskList *mTaskStoreMockSaveTaskList) Return(err error) *TaskStoreMo
 }
 
 // Set uses given function f to mock the taskStore.SaveTaskList method
-func (mmSaveTaskList *mTaskStoreMockSaveTaskList) Set(f func(chatID int64, scope string, startNumber int, tasks []thingsreader.Task) (err error)) *TaskStoreMock {
+func (mmSaveTaskList *mTaskStoreMockSaveTaskList) Set(f func(chatID int64, scope string, startNumber int, tasks []thingser.Task) (err error)) *TaskStoreMock {
 	if mmSaveTaskList.defaultExpectation != nil {
 		mmSaveTaskList.mock.t.Fatalf("Default expectation is already set for the taskStore.SaveTaskList method")
 	}
@@ -273,7 +273,7 @@ func (mmSaveTaskList *mTaskStoreMockSaveTaskList) Set(f func(chatID int64, scope
 
 // When sets expectation for the taskStore.SaveTaskList which will trigger the result defined by the following
 // Then helper
-func (mmSaveTaskList *mTaskStoreMockSaveTaskList) When(chatID int64, scope string, startNumber int, tasks []thingsreader.Task) *TaskStoreMockSaveTaskListExpectation {
+func (mmSaveTaskList *mTaskStoreMockSaveTaskList) When(chatID int64, scope string, startNumber int, tasks []thingser.Task) *TaskStoreMockSaveTaskListExpectation {
 	if mmSaveTaskList.mock.funcSaveTaskList != nil {
 		mmSaveTaskList.mock.t.Fatalf("TaskStoreMock.SaveTaskList mock is already set by Set")
 	}
@@ -315,7 +315,7 @@ func (mmSaveTaskList *mTaskStoreMockSaveTaskList) invocationsDone() bool {
 }
 
 // SaveTaskList implements taskStore
-func (mmSaveTaskList *TaskStoreMock) SaveTaskList(chatID int64, scope string, startNumber int, tasks []thingsreader.Task) (err error) {
+func (mmSaveTaskList *TaskStoreMock) SaveTaskList(chatID int64, scope string, startNumber int, tasks []thingser.Task) (err error) {
 	mm_atomic.AddUint64(&mmSaveTaskList.beforeSaveTaskListCounter, 1)
 	defer mm_atomic.AddUint64(&mmSaveTaskList.afterSaveTaskListCounter, 1)
 
@@ -492,7 +492,7 @@ type TaskStoreMockTaskByNumberParamPtrs struct {
 
 // TaskStoreMockTaskByNumberResults contains results of the taskStore.TaskByNumber
 type TaskStoreMockTaskByNumberResults struct {
-	t1  thingsreader.Task
+	t1  thingser.Task
 	err error
 }
 
@@ -596,7 +596,7 @@ func (mmTaskByNumber *mTaskStoreMockTaskByNumber) Inspect(f func(chatID int64, n
 }
 
 // Return sets up results that will be returned by taskStore.TaskByNumber
-func (mmTaskByNumber *mTaskStoreMockTaskByNumber) Return(t1 thingsreader.Task, err error) *TaskStoreMock {
+func (mmTaskByNumber *mTaskStoreMockTaskByNumber) Return(t1 thingser.Task, err error) *TaskStoreMock {
 	if mmTaskByNumber.mock.funcTaskByNumber != nil {
 		mmTaskByNumber.mock.t.Fatalf("TaskStoreMock.TaskByNumber mock is already set by Set")
 	}
@@ -610,7 +610,7 @@ func (mmTaskByNumber *mTaskStoreMockTaskByNumber) Return(t1 thingsreader.Task, e
 }
 
 // Set uses given function f to mock the taskStore.TaskByNumber method
-func (mmTaskByNumber *mTaskStoreMockTaskByNumber) Set(f func(chatID int64, number int) (t1 thingsreader.Task, err error)) *TaskStoreMock {
+func (mmTaskByNumber *mTaskStoreMockTaskByNumber) Set(f func(chatID int64, number int) (t1 thingser.Task, err error)) *TaskStoreMock {
 	if mmTaskByNumber.defaultExpectation != nil {
 		mmTaskByNumber.mock.t.Fatalf("Default expectation is already set for the taskStore.TaskByNumber method")
 	}
@@ -641,7 +641,7 @@ func (mmTaskByNumber *mTaskStoreMockTaskByNumber) When(chatID int64, number int)
 }
 
 // Then sets up taskStore.TaskByNumber return parameters for the expectation previously defined by the When method
-func (e *TaskStoreMockTaskByNumberExpectation) Then(t1 thingsreader.Task, err error) *TaskStoreMock {
+func (e *TaskStoreMockTaskByNumberExpectation) Then(t1 thingser.Task, err error) *TaskStoreMock {
 	e.results = &TaskStoreMockTaskByNumberResults{t1, err}
 	return e.mock
 }
@@ -668,7 +668,7 @@ func (mmTaskByNumber *mTaskStoreMockTaskByNumber) invocationsDone() bool {
 }
 
 // TaskByNumber implements taskStore
-func (mmTaskByNumber *TaskStoreMock) TaskByNumber(chatID int64, number int) (t1 thingsreader.Task, err error) {
+func (mmTaskByNumber *TaskStoreMock) TaskByNumber(chatID int64, number int) (t1 thingser.Task, err error) {
 	mm_atomic.AddUint64(&mmTaskByNumber.beforeTaskByNumberCounter, 1)
 	defer mm_atomic.AddUint64(&mmTaskByNumber.afterTaskByNumberCounter, 1)
 

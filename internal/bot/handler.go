@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/IlyasYOY/telethings/internal/thingsreader"
+	"github.com/IlyasYOY/telethings/internal/thingser"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -295,7 +295,7 @@ func (h *Handler) handlePaginatedTagTasks(chatID int64, tag string, page int) er
 	return h.sender.SendWithInlineKeyboard(chatID, text, keyboard)
 }
 
-func formatPaginatedTasks(list string, tasks []thingsreader.Task, page int, hasNext bool) (string, tgbotapi.InlineKeyboardMarkup) {
+func formatPaginatedTasks(list string, tasks []thingser.Task, page int, hasNext bool) (string, tgbotapi.InlineKeyboardMarkup) {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "📋 %s — page %d\n\n", list, page+1)
 	startNumber := page*tasksPageSize + 1
@@ -318,7 +318,7 @@ func formatPaginatedTasks(list string, tasks []thingsreader.Task, page int, hasN
 	return text, tgbotapi.NewInlineKeyboardMarkup(row)
 }
 
-func formatPaginatedTagTasks(tag string, tasks []thingsreader.Task, page int, hasNext bool) (string, tgbotapi.InlineKeyboardMarkup) {
+func formatPaginatedTagTasks(tag string, tasks []thingser.Task, page int, hasNext bool) (string, tgbotapi.InlineKeyboardMarkup) {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "🏷️ %s — page %d\n\n", tag, page+1)
 	startNumber := page*tasksPageSize + 1
@@ -368,7 +368,7 @@ func (h *Handler) handleTaskList(msg *tgbotapi.Message, list, emptyMsg string) e
 	return h.sender.Send(msg.Chat.ID, text)
 }
 
-func (h *Handler) saveTaskList(chatID int64, scope string, startNumber int, tasks []thingsreader.Task) error {
+func (h *Handler) saveTaskList(chatID int64, scope string, startNumber int, tasks []thingser.Task) error {
 	if h.store == nil {
 		return nil
 	}
@@ -472,7 +472,7 @@ func (h *Handler) handleTaskOperation(chatID int64, number int, operation string
 	return h.sender.Send(chatID, successText)
 }
 
-func formatTaskDetails(number int, task thingsreader.Task) string {
+func formatTaskDetails(number int, task thingser.Task) string {
 	var sb strings.Builder
 	status := "open"
 	if task.Canceled {
@@ -498,7 +498,7 @@ func formatTaskDetails(number int, task thingsreader.Task) string {
 	return strings.TrimRight(sb.String(), "\n")
 }
 
-func formatInboxTasks(tasks []thingsreader.Task) string {
+func formatInboxTasks(tasks []thingser.Task) string {
 	var sb strings.Builder
 	for i, t := range tasks {
 		fmt.Fprintf(&sb, "%d. %s\n", i+1, formatTaskLine(t, true))
@@ -506,17 +506,17 @@ func formatInboxTasks(tasks []thingsreader.Task) string {
 	return strings.TrimRight(sb.String(), "\n")
 }
 
-func sortedTasksForDisplay(tasks []thingsreader.Task) []thingsreader.Task {
-	items := append([]thingsreader.Task(nil), tasks...)
+func sortedTasksForDisplay(tasks []thingser.Task) []thingser.Task {
+	items := append([]thingser.Task(nil), tasks...)
 	sort.Slice(items, func(i, j int) bool {
 		return lessTaskForDisplay(items[i], items[j])
 	})
 	return items
 }
 
-func formatTodayTasks(tasks []thingsreader.Task) string {
-	areaGroups := make(map[string][]thingsreader.Task)
-	projectGroups := make(map[string][]thingsreader.Task)
+func formatTodayTasks(tasks []thingser.Task) string {
+	areaGroups := make(map[string][]thingser.Task)
+	projectGroups := make(map[string][]thingser.Task)
 	for _, task := range tasks {
 		switch {
 		case task.Area != "":
@@ -580,9 +580,9 @@ func formatTodayTasks(tasks []thingsreader.Task) string {
 	return strings.TrimRight(sb.String(), "\n")
 }
 
-func orderedTodayTasks(tasks []thingsreader.Task) []thingsreader.Task {
-	areaGroups := make(map[string][]thingsreader.Task)
-	projectGroups := make(map[string][]thingsreader.Task)
+func orderedTodayTasks(tasks []thingser.Task) []thingser.Task {
+	areaGroups := make(map[string][]thingser.Task)
+	projectGroups := make(map[string][]thingser.Task)
 	for _, task := range tasks {
 		switch {
 		case task.Area != "":
@@ -606,7 +606,7 @@ func orderedTodayTasks(tasks []thingsreader.Task) []thingsreader.Task {
 	}
 	sort.Strings(projects)
 
-	ordered := make([]thingsreader.Task, 0, len(tasks))
+	ordered := make([]thingser.Task, 0, len(tasks))
 	for _, area := range areas {
 		items := areaGroups[area]
 		sort.Slice(items, func(i, j int) bool {
@@ -624,7 +624,7 @@ func orderedTodayTasks(tasks []thingsreader.Task) []thingsreader.Task {
 	return ordered
 }
 
-func formatTaskLine(task thingsreader.Task, includeAreaProject bool) string {
+func formatTaskLine(task thingser.Task, includeAreaProject bool) string {
 	prefix := "⬜ "
 	if task.Canceled {
 		prefix = "🚫 "
@@ -655,7 +655,7 @@ func formatTaskLine(task thingsreader.Task, includeAreaProject bool) string {
 	return prefix + task.Title + " — " + strings.Join(parts, " | ")
 }
 
-func lessTaskForDisplay(a, b thingsreader.Task) bool {
+func lessTaskForDisplay(a, b thingser.Task) bool {
 	aClosed := a.Completed || a.Canceled
 	bClosed := b.Completed || b.Canceled
 	if aClosed != bClosed {
@@ -671,7 +671,7 @@ func (h *Handler) handleAdd(msg *tgbotapi.Message) error {
 		return h.sender.Send(msg.Chat.ID, "Usage: /add <title> [when:<value>] [deadline:<value>] [tags:<csv>] [notes:<text>]")
 	}
 
-	task, err := h.reader.AddTask(thingsreader.AddTaskInput{
+	task, err := h.reader.AddTask(thingser.AddTaskInput{
 		Title:    input.title,
 		When:     input.when,
 		Deadline: input.deadline,
@@ -682,7 +682,7 @@ func (h *Handler) handleAdd(msg *tgbotapi.Message) error {
 		return fmt.Errorf("add task: %w", err)
 	}
 	if h.store != nil {
-		if err := h.store.SaveTaskList(msg.Chat.ID, "add:last", 1, []thingsreader.Task{task}); err != nil {
+		if err := h.store.SaveTaskList(msg.Chat.ID, "add:last", 1, []thingser.Task{task}); err != nil {
 			return fmt.Errorf("save task mapping: %w", err)
 		}
 	}

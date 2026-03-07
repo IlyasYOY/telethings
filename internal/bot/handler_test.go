@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/IlyasYOY/telethings/internal/bot"
-	"github.com/IlyasYOY/telethings/internal/thingsreader"
+	"github.com/IlyasYOY/telethings/internal/thingser"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -201,11 +201,11 @@ func TestHandlerHandle_CallbackTagSelection_PaginatedTasks(t *testing.T) {
 	})
 
 	reader := &testThingsReader{
-		tasksByTagPage: func(tag string, offset int, limit int) ([]thingsreader.Task, error) {
+		tasksByTagPage: func(tag string, offset int, limit int) ([]thingser.Task, error) {
 			if tag != "Home/Errands" || offset != 0 || limit != 11 {
 				t.Fatalf("unexpected args: %s %d %d", tag, offset, limit)
 			}
-			return []thingsreader.Task{
+			return []thingser.Task{
 				{ID: "1", Title: "One"},
 				{ID: "2", Title: "Two"},
 				{ID: "3", Title: "Three"},
@@ -222,7 +222,7 @@ func TestHandlerHandle_CallbackTagSelection_PaginatedTasks(t *testing.T) {
 	}
 
 	store := NewTaskStoreMock(t)
-	store.SaveTaskListMock.Set(func(chatID int64, scope string, startNumber int, tasks []thingsreader.Task) error {
+	store.SaveTaskListMock.Set(func(chatID int64, scope string, startNumber int, tasks []thingser.Task) error {
 		if chatID != 1001 || scope != "tag:Home/Errands" || startNumber != 1 {
 			t.Fatalf("unexpected save params: %d %s %d", chatID, scope, startNumber)
 		}
@@ -266,7 +266,7 @@ func TestHandlerHandle_CallbackListPagination_EmptyPageFallsBack(t *testing.T) {
 
 	call := 0
 	reader := &testThingsReader{
-		tasksInListPage: func(list string, offset, limit int) ([]thingsreader.Task, error) {
+		tasksInListPage: func(list string, offset, limit int) ([]thingser.Task, error) {
 			call++
 			if list != "Anytime" || limit != 11 {
 				t.Fatalf("unexpected paging args: %s %d", list, limit)
@@ -281,7 +281,7 @@ func TestHandlerHandle_CallbackListPagination_EmptyPageFallsBack(t *testing.T) {
 				if offset != 10 {
 					t.Fatalf("unexpected fallback offset: %d", offset)
 				}
-				return []thingsreader.Task{{ID: "a1", Title: "Task A"}}, nil
+				return []thingser.Task{{ID: "a1", Title: "Task A"}}, nil
 			default:
 				return nil, fmt.Errorf("unexpected call %d", call)
 			}
@@ -289,7 +289,7 @@ func TestHandlerHandle_CallbackListPagination_EmptyPageFallsBack(t *testing.T) {
 	}
 
 	store := NewTaskStoreMock(t)
-	store.SaveTaskListMock.Expect(int64(1001), "list:anytime", 11, []thingsreader.Task{{ID: "a1", Title: "Task A"}}).Return(nil)
+	store.SaveTaskListMock.Expect(int64(1001), "list:anytime", 11, []thingser.Task{{ID: "a1", Title: "Task A"}}).Return(nil)
 
 	handler := bot.NewHandler(sender, nil, reader, store, []int64{42})
 	err := handler.Handle(callbackUpdate(42, 1001, "cb1", "page:anytime:2"))
@@ -313,7 +313,7 @@ func TestHandlerHandle_CallbackTaskOperationDone(t *testing.T) {
 		},
 	}
 	store := NewTaskStoreMock(t)
-	store.TaskByNumberMock.Expect(int64(1001), 3).Return(thingsreader.Task{ID: "task-1", Title: "Do thing"}, nil)
+	store.TaskByNumberMock.Expect(int64(1001), 3).Return(thingser.Task{ID: "task-1", Title: "Do thing"}, nil)
 
 	handler := bot.NewHandler(sender, nil, reader, store, []int64{42})
 	err := handler.Handle(callbackUpdate(42, 1001, "cb1", "taskop:done:3"))
@@ -358,26 +358,26 @@ func callbackUpdate(userID, chatID int64, callbackID, data string) tgbotapi.Upda
 }
 
 type testThingsReader struct {
-	tasksInListPage  func(list string, offset, limit int) ([]thingsreader.Task, error)
-	tasksByTagPage   func(tag string, offset, limit int) ([]thingsreader.Task, error)
+	tasksInListPage  func(list string, offset, limit int) ([]thingser.Task, error)
+	tasksByTagPage   func(tag string, offset, limit int) ([]thingser.Task, error)
 	setTaskCompleted func(id string, completed bool) error
 }
 
-func (r *testThingsReader) TasksInList(string) ([]thingsreader.Task, error) { return nil, nil }
-func (r *testThingsReader) Tags() ([]thingsreader.Tag, error)               { return nil, nil }
-func (r *testThingsReader) AddTask(thingsreader.AddTaskInput) (thingsreader.Task, error) {
-	return thingsreader.Task{}, nil
+func (r *testThingsReader) TasksInList(string) ([]thingser.Task, error) { return nil, nil }
+func (r *testThingsReader) Tags() ([]thingser.Tag, error)               { return nil, nil }
+func (r *testThingsReader) AddTask(thingser.AddTaskInput) (thingser.Task, error) {
+	return thingser.Task{}, nil
 }
 func (r *testThingsReader) SetTaskCanceled(string, bool) error { return nil }
 
-func (r *testThingsReader) TasksInListPage(list string, offset, limit int) ([]thingsreader.Task, error) {
+func (r *testThingsReader) TasksInListPage(list string, offset, limit int) ([]thingser.Task, error) {
 	if r.tasksInListPage != nil {
 		return r.tasksInListPage(list, offset, limit)
 	}
 	return nil, nil
 }
 
-func (r *testThingsReader) TasksByTagPage(tag string, offset int, limit int) ([]thingsreader.Task, error) {
+func (r *testThingsReader) TasksByTagPage(tag string, offset int, limit int) ([]thingser.Task, error) {
 	if r.tasksByTagPage != nil {
 		return r.tasksByTagPage(tag, offset, limit)
 	}

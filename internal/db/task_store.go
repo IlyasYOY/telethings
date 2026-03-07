@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/IlyasYOY/telethings/internal/thingsreader"
+	"github.com/IlyasYOY/telethings/internal/thingser"
 )
 
 var ErrTaskNotFound = errors.New("task not found")
@@ -19,7 +19,7 @@ func NewTaskStore(db *sql.DB) *TaskStore {
 	return &TaskStore{db: db}
 }
 
-func (s *TaskStore) SaveTaskList(chatID int64, scope string, startNumber int, tasks []thingsreader.Task) error {
+func (s *TaskStore) SaveTaskList(chatID int64, scope string, startNumber int, tasks []thingser.Task) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -56,19 +56,19 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	return nil
 }
 
-func (s *TaskStore) TaskByNumber(chatID int64, number int) (thingsreader.Task, error) {
+func (s *TaskStore) TaskByNumber(chatID int64, number int) (thingser.Task, error) {
 	row := s.db.QueryRow(`SELECT task_id, title, project, area, deadline, tags_csv, completed
 FROM task_list_items
 WHERE chat_id = ? AND item_number = ?`, chatID, number)
 
-	var task thingsreader.Task
+	var task thingser.Task
 	var tagsCSV string
 	var completed int
 	if err := row.Scan(&task.ID, &task.Title, &task.Project, &task.Area, &task.Deadline, &tagsCSV, &completed); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return thingsreader.Task{}, ErrTaskNotFound
+			return thingser.Task{}, ErrTaskNotFound
 		}
-		return thingsreader.Task{}, fmt.Errorf("select list item: %w", err)
+		return thingser.Task{}, fmt.Errorf("select list item: %w", err)
 	}
 	if tagsCSV != "" {
 		task.Tags = strings.Split(tagsCSV, ",")

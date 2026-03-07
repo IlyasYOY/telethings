@@ -1,5 +1,5 @@
 // Package thingsreader provides implementations for reading data from Things 3.
-package thingsreader
+package thingser
 
 import (
 	"fmt"

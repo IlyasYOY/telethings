@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/IlyasYOY/telethings/internal/thingsreader"
+	"github.com/IlyasYOY/telethings/internal/thingser"
 )
 
 func TestOpenAndMigrate_DefaultDSNSuccess(t *testing.T) {
@@ -38,7 +38,7 @@ func TestTaskStore_SaveTaskListAndTaskByNumber(t *testing.T) {
 	t.Cleanup(func() { _ = conn.Close() })
 
 	store := NewTaskStore(conn)
-	tasks := []thingsreader.Task{
+	tasks := []thingser.Task{
 		{ID: "1", Title: "first", Project: "p1", Area: "a1", Deadline: "2026-01-01", Tags: []string{"work", "urgent"}, Completed: true},
 		{ID: "2", Title: "second", Project: "p2", Area: "a2", Deadline: "", Tags: nil, Completed: false},
 	}

@@ -27,17 +27,17 @@ The bot is a single binary (`cmd/telethings/main.go`) that long-polls Telegram f
 1. `bot.Bot.Run` receives a Telegram update via long-polling
 2. `bot.Handler.Handle` dispatches on the command name (`/start`, `/add`, `/today`, `/inbox`)
 3. For `/add`, `parseAddCommand` in `add_parser.go` parses the message text into a structured input
-4. `thingsreader.AppleScriptReader` executes AppleScript to add the task to Things 3 directly
+4. `thingser.AppleScriptReader` executes AppleScript to add the task to Things 3 directly
 
 **Package responsibilities:**
 - `internal/bot` — Telegram update handling, command parsing, `MessageSender` interface
-- `internal/thingsreader` — reads and writes Things 3 tasks via AppleScript
+- `internal/thingser` — reads and writes Things 3 tasks via AppleScript
 - `internal/config` — reads env vars; returns typed errors for each missing variable
 - `internal/db` — SQLite-backed task store (used for deferred/tracked tasks); defaults to `$XDG_DATA_HOME/telethings/telethings.db` when `TELETHINGS_DB_DSN` is unset
 
 ## Key Conventions
 
-**Interfaces for testability:** `bot.Handler` depends on `MessageSender` and the unexported `thingsReader`/`taskStore` interfaces, not on concrete types. Tests use `fakeSender` (inline in `handler_test.go`) and `readertest` helpers to avoid AppleScript calls.
+**Interfaces for testability:** `bot.Handler` depends on `MessageSender` and the unexported `thingser`/`taskStore` interfaces, not on concrete types.
 
 **External test packages:** Tests use `package bot_test` (not `package bot`), so only exported identifiers are accessible. Keep this pattern when adding new tests.
 
