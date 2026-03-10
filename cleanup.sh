@@ -26,6 +26,8 @@ echo
 echo "Stopping launchd service (if running): $service_id"
 launchctl bootout "gui/$uid" "$plist_path" >/dev/null 2>&1 || true
 launchctl disable "$service_id" >/dev/null 2>&1 || true
+launchctl stop "$service_id" >/dev/null 2>&1 || true
+launchctl remove "$service_id" >/dev/null 2>&1 || true
 
 read -r -p "Delete plist file '$plist_path'? [y/N] " delete_plist
 if [[ "$delete_plist" =~ ^[Yy]$ ]]; then
